@@ -1,0 +1,23 @@
+{
+  "name": "isomer-conversion-scripts",
+  "version": "1.0.0",
+  "description": "Running the scripts in this folder will allow you to modify the code in an Isomer V1 repository to be compatible with Isomer V2 templates.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isomerpages/isomer-conversion-scripts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/isomerpages/isomer-conversion-scripts/issues"
+  },
+  "homepage": "https://github.com/isomerpages/isomer-conversion-scripts#readme",
+  "dependencies": {
+    "js-yaml": "^3.13.1",
+    "yamljs": "^0.3.0"
+  }
+}
