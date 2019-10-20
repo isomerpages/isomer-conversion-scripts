@@ -2,7 +2,12 @@
 const yaml = require('js-yaml')
 const YAML = require('yamljs')
 const fs = require('fs')
-const path = require('path')
+
+/* 
+
+Helper functions
+
+*/
 
 // slugify function
 function slugify (name) {
@@ -20,10 +25,20 @@ function yamlParser (file) {
   return obj
 }
 
+// object to yaml converter
+function objToYaml(filePath, yamlObj) {
+  try {
+    fs.writeFileSync(filePath, YAML.stringify(yamlObj, {schema: 'core'}), {encoding: 'utf-8'})
+  } catch (err) {
+    console.log(err)
+  }
+  return
+}
+
 // extracts yaml front matter from a markdown file path
 function frontMatterParser (markdownFile) {
   // read markdown file
-  const result = fs.readFileSync(path.resolve(__dirname, markdownFile), 'utf8')
+  const result = fs.readFileSync(markdownFile, 'utf8')
 
   // format file to extract yaml front matter
   const contents = result.split('---')
@@ -38,6 +53,109 @@ function frontMatterParser (markdownFile) {
     content: articleContent
   }
 }
+
+// check if markdown file has front matter
+function checkFrontMatter (markdownFile) {
+  // read markdown file
+  const result = fs.readFileSync(markdownFile, 'utf8')
+
+  // format file to extract yaml front matter
+  const contents = result.split('---')
+  
+  if (contents) {
+    return (contents[0] === '')
+  }
+  return
+}
+
+// takes in a markdown file and a javascript object and updates the front
+// matter in the markdown file with the javascript object
+function frontMatterInsert(filePath, newData) {
+  let {configObj, content} = frontMatterParser(filePath)
+
+  // change the layout for contact-us page
+  if (configObj['layout'] === 'contact-us') {
+    configObj['layout'] = 'contact_us'
+  }
+
+  // if layout is leftnav-page, leftnav-page-content, or simple-page, we can
+    // remove the layout
+  if (configObj['layout'] === 'leftnav-page' || configObj['layout'] === 'leftnav-page-content' || configObj['layout'] === 'simple-page') {
+    delete configObj['layout']
+  }
+    // remove last-updated, collection_name if present
+  if (configObj['last-updated']) {
+    delete configObj['last-updated']
+  }
+  if (configObj['collection_name']) {
+    delete configObj['collection_name']
+  }
+    // change second_nav_title to third_nav_title if present
+  if (configObj['second_nav_title']) {
+    configObj['third_nav_title'] = configObj['second_nav_title']
+    delete configObj['second_nav_title']
+  }
+  
+  // add the new data to the config object
+  Object.assign(configObj, newData)
+
+  // join the components and write the file
+  const data = ['---\n', `${YAML.stringify(configObj, {schema: 'core'})}\n`, '---\n', content].join('')
+
+  // note that right now, stringify is not doing a good job of stringifying arrays
+  fs.writeFileSync(filePath, data, {encoding: 'utf-8'})
+  return data
+}
+
+// function to check if string is more than 50% integers
+function isPhoneNumber(inputString) {
+  let numberCount = 0
+
+  // check each element to see if it's a number
+  inputString.split('').forEach( curr => {
+    if (!isNaN(curr)) {
+      // increment if number
+      numberCount++
+    }
+  })
+  return numberCount/inputString.length > 0.5
+}
+
+// function to check if string is email
+function isEmail(email) {
+  // regex to test for email validity
+  var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+  // split by space and check if the first element is an email
+  return re.test(email.split(' ')[0])
+}
+
+// function to check if a line in contact-us.yml is 
+  // a phone number
+  // an email
+  // others
+function contactUsLineChecker(line) {
+  if (isPhoneNumber(line)) {
+    return {
+      phone: line
+    }
+  } 
+
+  if (isEmail(line)) {
+    return {
+      email: line.replace(' (email)', '')
+    }
+  }
+
+  else {
+    return {
+      other: line
+    }
+  }
+}
+
+
+
 
 /*
 
@@ -138,7 +256,7 @@ function homepageModifier(homepageObjPath, homepageFields, programmesObjPath) {
   var sections = [ { hero: {} } ] 
   var resources = {}
   var carousel = []
-  var notification = `notification: "This website is in beta - your valuable <a href=\"https://www.google.com\">feedback</a> will help us in improving it."`
+  var notification = `This website is in beta - your valuable <a href=\"https://www.google.com\">feedback</a> will help us in improving it.`
 
   /*
   
@@ -250,7 +368,13 @@ function homepageModifier(homepageObjPath, homepageFields, programmesObjPath) {
   // key highlights
   if (homepageObj['key-highlights']) {
     Object.assign(sections[0].hero, {
-      'key-highlights': homepageObj['key-highlights'],
+      'key_highlights': homepageObj['key-highlights'],
+    })
+    
+    sections[0].hero['key_highlights'].forEach( curr => {
+      if (curr['external']) {
+        delete curr['external']
+      }
     })
   }
   
@@ -265,7 +389,7 @@ function homepageModifier(homepageObjPath, homepageFields, programmesObjPath) {
     // _config.yml file
     // social media yml file
     // privacy, terms of use, and contact us markdowns
-function footerGenerator(configPath, privacyPath, termsPath, contactUsPath, socialMediaPath) {
+function footerGenerator(directory, configPath, privacyPath, termsPath, contactUsPath, socialMediaPath) {
   // parse files
   let config = yamlParser(configPath)
   let privacy = frontMatterParser(privacyPath).configObj
@@ -300,7 +424,9 @@ function footerGenerator(configPath, privacyPath, termsPath, contactUsPath, soci
     footer['social_media'] = socialMedia
   }
 
-  return footer
+  // return footer
+  objToYaml(`${directory}/_data/footer.yml`, footer)
+  return
 }
 
 // modifies the navigation.yml file
@@ -338,16 +464,17 @@ function navigationModifier(homepageObjPath, navigationObjPath) {
     return el
   })
 
-  return {
+  const res = {
     logo,
     links: navigationObj
   }
+  // overwrite the navigation yml file
+  objToYaml(navigationObjPath, res)
 }
 
 // modifies the contact-us.md page so that it includes the new front matter
 function contactUsModifier(contactUsYamlPath, contactUsPath) {
   // parse files
-  const contactUsObj = frontMatterParser(contactUsPath)
   const contactUsConfig = yamlParser(contactUsYamlPath)
 
   // change attribute from column to contacts
@@ -356,81 +483,60 @@ function contactUsModifier(contactUsYamlPath, contactUsPath) {
   // remove column
   delete contactUsConfig['column']
 
+  contactUsConfig['locations'].forEach( curr => {
+    // replace operating-hours with operating_hours and delete original
+    if (curr['operating-hours']) {
+      curr['operating_hours'] = curr['operating-hours']
+      delete curr['operating-hours']
+    }
+
+    // split location address into different lines
+    curr['address'] = curr['address'].split('<br>')
+  })
+
+  // within contacts and content, replace lines with phone, email, and other
+  contactUsConfig['contacts'].forEach( curr => {
+    if (curr['content']) {
+      // replace individual elements in content
+      curr['content'] = curr['content'].map( ele => {
+        // check if it's a phone number or email
+        return contactUsLineChecker(ele['line'])
+      })
+    }
+  })
+
   // update the front matter
-  const res = frontMatterInsert(contactUsObj, contactUsConfig)
+  const res = frontMatterInsert(contactUsPath, contactUsConfig)
 
   // write the contact us markdown file
-  fs.writeFileSync('index1111.md', res, {encoding: 'utf-8'})
-  return
+  fs.writeFileSync(contactUsPath, res, {encoding: 'utf-8'})
+  return 
 }
 
-function indexModifier(confObjPath, homepagePath, programmesPath, indexPath) {
-  // parse files
-  const confObj = yamlParser(confObjPath)
-  const homepageObj = yamlParser(homepagePath)
-  const programmesObj = yamlParser(programmesPath)
-
-  // get the config object to supplement homepage yml data
-  const { homepageFields } = configYmlModifier(confObj, homepageObj)
-
+function indexModifier(homepageFields, homepageObjPath, programmesObjPath, indexPath) {
   // update the homepage yml data
-  const newData = homepageModifier(homepageObj, homepageFields, programmesObj)
+  const newData = homepageModifier(homepageObjPath, homepageFields, programmesObjPath)
 
   // update the front matter
-  const res = frontMatterInsert(frontMatterParser(indexPath), newData) 
+  const res = frontMatterInsert(indexPath, newData) // problem here
 
   // write the contact us markdown file
-  fs.writeFileSync('index1111.md', res, {encoding: 'utf-8'})
+  fs.writeFileSync(indexPath, res, {encoding: 'utf-8'})
   return
 }
 
 
-
-
-// takes in a markdown file and a javascript object and updates the front
-// matter in the markdown file with the javascript object
-function frontMatterInsert({configObj, content}, newData) {
-  // if layout is leftnav-page, leftnav-page-content, or simple-page, we can
-    // remove the layout
-  if (configObj['layout'] === 'leftnav-page' || configObj['layout'] === 'leftnav-page-content' || configObj['layout'] === 'simple-page') {
-    delete configObj['layout']
-  }
-    // remove last-updated, collection_name if present
-  if (configObj['last-updated']) {
-    delete configObj['last-updated']
-  }
-  if (configObj['collection_name']) {
-    delete configObj['collection_name']
-  }
-    // change second_nav_title to third_nav_title if present
-  if (configObj['second_nav_title']) {
-    configObj['third_nav_title'] = configObj['second_nav_title']
-    delete configObj['second_nav_title']
-  }
-  
-  // add the new data to the config object
-  Object.assign(configObj, newData)
-  console.log(configObj)
-
-  // join the components and write the file
-  const data = ['---\n', `${YAML.stringify(configObj, {schema: 'core'})}\n`, '---\n', content].join('')
-
-  // note that right now, stringify is not doing a good job of stringifying arrays
-  fs.writeFileSync('index1111.md', data, {encoding: 'utf-8'})
-  return data
-}
-
-const abc = configYmlModifier('./_config.yml', './_data/homepage.yml', './_data/navigation.yml') 
-console.log(abc.confObj)
-
-module.export = {
+module.exports = {
   yamlParser,
+  checkFrontMatter,
   frontMatterInsert,
   frontMatterParser,
+  contactUsLineChecker,
   configYmlModifier,
   homepageModifier,
   footerGenerator,
   navigationModifier,
   contactUsModifier,
   indexModifier,
+  objToYaml,
 }
