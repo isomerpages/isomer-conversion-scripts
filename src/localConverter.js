@@ -129,6 +129,7 @@ const loopThroughDirectory = function(directory) {
       // recursively call loopThroughDirectory
       folders.forEach( curr => {
         if (curr) {
+          // recursive call through the remaining directories in the folder
           loopThroughDirectory(`${directory}/${curr}`)
         }
       })
