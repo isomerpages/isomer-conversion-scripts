@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/isomerpages/isomer-conversion-scripts#readme",
   "dependencies": {
+    "@octokit/request": "^5.2.1",
+    "btoa": "^1.2.1",
     "js-yaml": "^3.13.1",
     "yamljs": "^0.3.0"
   }
