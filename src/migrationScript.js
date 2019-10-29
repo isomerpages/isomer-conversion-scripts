@@ -212,44 +212,42 @@ async function getRepoContents (pathString) {
       owner: 'isomerpages',
       repo: testingRepo,
       path: pathString,
+      branch: 'v2Migration',
       headers: header,
     })
 
+
     // run a recursive search over all the files - insert a try catch around the get and update functions
-    for (const file of data.data) {
+    for (const file of await data.data) {
       // the files we want to modify are:
         // files, not folders
         // markdown files which have front matter
 
-        // boolean that says whether file is a markdown file
-        const isMd = file.name.split('.')[file.name.split('.').length - 1] === 'md'
-        if (file.type === 'file' && isMd) {
-          // check file for whether it has front matter
-          try {
-            const { content, sha } = await utils.getFileFromGithub(header, testingRepo, file.path)
-            if (utils.checkFrontMatter(content)) {
-              // put them through front matter insert to remove unncessary fields
-              const res = await utils.frontMatterInsert(content, {})
-              // update the file 
-              // CURRENTLY HAVING PROBLEMS HERE
-              await utils.updateFileOnGithub(header, testingRepo, file.path, res, sha) 
-            }
-          } catch (err) {
-            console.log(err)
+      // boolean that says whether file is a markdown file
+      const isMd = await file.name.split('.')[file.name.split('.').length - 1] === 'md'
+
+      if (file.type === 'dir') {
+        console.log(await file.path)
+        await getRepoContents(file.path)
+      }
+
+      else if (file.type === 'file' && isMd) {
+        // check file for whether it has front matter
+        try {
+          const { content, sha } = await utils.getFileFromGithub(header, testingRepo, file.path)
+          if (utils.checkFrontMatter(await content)) {
+            // put them through front matter insert to remove unncessary fields
+            const res = await utils.frontMatterInsert(content, {})
+            // update the file
+            await utils.updateFileOnGithub(header, testingRepo, file.path, res, sha)
           }
-        } 
-  
-        if (file.type === 'dir') {
-          getRepoContents(`${pathString}/${file.path}`) // check again the path of file.path to see whether this needs to be reformatted
+          console.log(await file.path)
+        } catch (err) {
+          console.log(err)
         }
+      }
     }
 
-    return data
-    /*
-
-        Here we can experiment with inviting through email instead of userId
-
-    */
   } catch (err) {
       // *** log error - to do: develop more sophisticated error detection techniques
       console.log('No further child files')
@@ -267,14 +265,14 @@ async function test() {
   try {
     await createMigrationBranch()
     await migrate()
-    // getRepoContents('')
+    await getRepoContents('')
   } catch (err) {
     console.log(err)
   }
  }
 
-// test()
-getRepoContents('')
+test()
+// getRepoContents('')
 module.exports = {
   CREDENTIALS,
   header,
