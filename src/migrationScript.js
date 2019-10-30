@@ -5,18 +5,16 @@ const utils = require('./utils')
 const migration = require('./migrationTools')
 
 // Testing repo name
-const testingRepo = 'isomerpages-govtech'
+const repoToMigrate = process.argv[4]
 
 // Credentials with generic header
-const PERSONAL_ACCESS_TOKEN = process.env['KWAJIEHAO_PERSONAL_ACCESS_TOKEN'] // kwajiehao personal access token
-const USERNAME = 'kwajiehao' // user account which possesses the power to perform permissioned actions
+const PERSONAL_ACCESS_TOKEN = process.argv[3]
+const USERNAME = process.argv[2]
 const CREDENTIALS = `${USERNAME}:${PERSONAL_ACCESS_TOKEN}`
 const header = {
   authorization: `basic ${btoa(CREDENTIALS)}`,
   accept: 'application/json',
 }
-
-// currently repo is hardcoded
 
 // the steps are:
   // 1. create a new branch which forks off staging if it doesn't exist
@@ -100,7 +98,7 @@ async function deleteBranchFunction (repoName, branchName) {
   }
 }
 
-async function createMigrationBranch (repoName=testingRepo, branchName='v2Migration') {
+async function createMigrationBranch (repoName=repoToMigrate, branchName='v2Migration') {
   let res
   try {
     // create branch
@@ -132,19 +130,19 @@ async function migrate () {
 Intermediary step - get necessary files for manipulation
 
 */
-  const config = await utils.getFileFromGithub(header, testingRepo, '_config.yml')
-  const homepage = await utils.getFileFromGithub(header, testingRepo, '_data/homepage.yml')
-  const navigation = await utils.getFileFromGithub(header, testingRepo, '_data/navigation.yml')
-  const contactUs = await utils.getFileFromGithub(header, testingRepo, '_data/contact-us.yml')
-  const careersStories = await utils.getFileFromGithub(header, testingRepo, '_data/careers-stories.yml')
-  const products = await utils.getFileFromGithub(header, testingRepo, '_data/products.yml')
-  const programmes = await utils.getFileFromGithub(header, testingRepo, '_data/programmes.yml')
-  const resources = await utils.getFileFromGithub(header, testingRepo, '_data/resources.yml')
-  const socialMedia = await utils.getFileFromGithub(header, testingRepo, '_data/social-media.yml')
-  const privacyMd = await utils.getFileFromGithub(header, testingRepo, 'pages/privacy.md')
-  const termsMd = await utils.getFileFromGithub(header, testingRepo, 'pages/terms-of-use.md')
-  const contactUsMd = await utils.getFileFromGithub(header, testingRepo, 'pages/contact-us.md')
-  const indexMd = await utils.getFileFromGithub(header, testingRepo, 'index.md')
+  const config = await utils.getFileFromGithub(header, repoToMigrate, '_config.yml')
+  const homepage = await utils.getFileFromGithub(header, repoToMigrate, '_data/homepage.yml')
+  const navigation = await utils.getFileFromGithub(header, repoToMigrate, '_data/navigation.yml')
+  const contactUs = await utils.getFileFromGithub(header, repoToMigrate, '_data/contact-us.yml')
+  const careersStories = await utils.getFileFromGithub(header, repoToMigrate, '_data/careers-stories.yml')
+  const products = await utils.getFileFromGithub(header, repoToMigrate, '_data/products.yml')
+  const programmes = await utils.getFileFromGithub(header, repoToMigrate, '_data/programmes.yml')
+  const resources = await utils.getFileFromGithub(header, repoToMigrate, '_data/resources.yml')
+  const socialMedia = await utils.getFileFromGithub(header, repoToMigrate, '_data/social-media.yml')
+  const privacyMd = await utils.getFileFromGithub(header, repoToMigrate, 'pages/privacy.md')
+  const termsMd = await utils.getFileFromGithub(header, repoToMigrate, 'pages/terms-of-use.md')
+  const contactUsMd = await utils.getFileFromGithub(header, repoToMigrate, 'pages/contact-us.md')
+  const indexMd = await utils.getFileFromGithub(header, repoToMigrate, 'index.md')
 /*
 
 Step 2 - Add files
@@ -152,7 +150,7 @@ Step 2 - Add files
 */
   // upload footer.yml
   const footer = await migration.footerGenerator(utils.yamlParser(config.content), utils.frontMatterParser(privacyMd.content).frontMatter, utils.frontMatterParser(termsMd.content).frontMatter, utils.frontMatterParser(contactUsMd.content).frontMatter, utils.yamlParser(socialMedia.content)) 
-  const uploadFooter = await utils.updateFileOnGithub(header, testingRepo, '_data/footer.yml', footer)
+  const uploadFooter = await utils.updateFileOnGithub(header, repoToMigrate, '_data/footer.yml', footer)
   if (uploadFooter.status === 201) console.log('footer.yml was created') 
   
 /*
@@ -164,23 +162,22 @@ Step 3 - Modify files
   // modify _config.yml file
   const configResults = await migration.configYmlModifier(utils.yamlParser(config.content), utils.yamlParser(homepage.content), utils.yamlParser(navigation.content))
   const newConfigFile = utils.objToYaml( await configResults.confObj)
-  const uploadConfig = await utils.updateFileOnGithub(header, testingRepo, '_config.yml', newConfigFile, config.sha)
+  const uploadConfig = await utils.updateFileOnGithub(header, repoToMigrate, '_config.yml', newConfigFile, config.sha)
   if (uploadConfig.status === 200) console.log('_config.yml was updated') 
 
   // modify navigation.yml
-  const navResults = await migration.navYmlModifier(utils.yamlParser(homepage.content), utils.yamlParser(navigation.content))
-  const newNavFile = utils.objToYaml( await navResults)
-  const uploadNav = await utils.updateFileOnGithub(header,testingRepo, '_data/navigation.yml', newNavFile, navigation.sha)
+  const newNavFile = await migration.navYmlModifier(utils.yamlParser(homepage.content), utils.yamlParser(navigation.content))
+  const uploadNav = await utils.updateFileOnGithub(header,repoToMigrate, '_data/navigation.yml', newNavFile, navigation.sha)
   if (uploadNav.status === 200) console.log('navigation.yml was updated') 
 
   // modify index.md
   const newIndexFile = await migration.indexModifier(configResults.homepageFields, utils.yamlParser(homepage.content), utils.yamlParser(programmes.content), indexMd.content)
-  const uploadIndex = await utils.updateFileOnGithub(header, testingRepo, 'index.md', newIndexFile, indexMd.sha)
+  const uploadIndex = await utils.updateFileOnGithub(header, repoToMigrate, 'index.md', newIndexFile, indexMd.sha)
   if (uploadIndex.status === 200) console.log('index.md was updated') 
 
   // modify contact-us.md
   const contactUsResults = await migration.contactUsModifier(utils.yamlParser(contactUs.content), contactUsMd.content)
-  const uploadContactUs = await utils.updateFileOnGithub(header, testingRepo, 'pages/contact-us.md', contactUsResults, contactUsMd.sha)
+  const uploadContactUs = await utils.updateFileOnGithub(header, repoToMigrate, 'pages/contact-us.md', contactUsResults, contactUsMd.sha)
   if (uploadContactUs.status === 200) console.log('contact-us.md was updated') 
 
 /*
@@ -192,7 +189,7 @@ Step 4 - Remove files
   // since async doesn't work with forEach
   for (const page of pagesToDel) {
     if (page) {
-      await utils.deleteFileOnGithub(header, testingRepo, page.path, page.sha)
+      await utils.deleteFileOnGithub(header, repoToMigrate, page.path, page.sha)
     }
   }
 }
@@ -210,7 +207,7 @@ async function getRepoContents (pathString) {
   try {
     const data = await request('GET /repos/:owner/:repo/contents/:path', {
       owner: 'isomerpages',
-      repo: testingRepo,
+      repo: repoToMigrate,
       path: pathString,
       branch: 'v2Migration',
       headers: header,
@@ -234,12 +231,12 @@ async function getRepoContents (pathString) {
       else if (file.type === 'file' && isMd) {
         // check file for whether it has front matter
         try {
-          const { content, sha } = await utils.getFileFromGithub(header, testingRepo, file.path)
+          const { content, sha } = await utils.getFileFromGithub(header, repoToMigrate, file.path)
           if (utils.checkFrontMatter(await content)) {
             // put them through front matter insert to remove unncessary fields
             const res = await utils.frontMatterInsert(content, {})
             // update the file
-            await utils.updateFileOnGithub(header, testingRepo, file.path, res, sha)
+            await utils.updateFileOnGithub(header, repoToMigrate, file.path, res, sha)
           }
           console.log(await file.path)
         } catch (err) {
@@ -272,7 +269,7 @@ async function test() {
  }
 
 test()
-// getRepoContents('')
+
 module.exports = {
   CREDENTIALS,
   header,
