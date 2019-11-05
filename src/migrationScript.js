@@ -154,6 +154,12 @@ Step 2 - Add files
   const footer = await migration.footerGenerator(utils.yamlParser(config.content), utils.frontMatterParser(privacyMd.content).frontMatter, utils.frontMatterParser(termsMd.content).frontMatter, utils.frontMatterParser(contactUsMd.content).frontMatter, utils.yamlParser(socialMedia.content)) 
   const uploadFooter = await utils.updateFileOnGithub(header, repoToMigrate, '_data/footer.yml', footer)
   if (uploadFooter.status === 201) console.log('footer.yml was created')
+
+  // upload collections.yml
+  const collections = await migration.collectionsGenerator(utils.yamlParser(navigation.content), repoToMigrate, header) 
+  const uploadCollections = await utils.updateFileOnGithub(header, repoToMigrate, '_data/collections.yml', collections)
+  if (uploadCollections.status === 201) console.log('collections.yml was created')
+
   
 /*
 

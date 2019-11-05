@@ -38,6 +38,52 @@ function footerGenerator(confObj, privacyFrontMatter, termsFrontMatter, contactU
   return utils.objToYaml(footer)
 }
 
+async function collectionsGenerator (navigationObj, repoToMigrate, header) {
+  // refer to https://docs.google.com/document/d/1U1OH--55GILetYTGpkveInvarhg0k_Q7xI8bs8MqZig/edit?usp=sharing
+  // for collections generating logic
+
+  // create a list to store collections objects
+  const collections = []
+
+  // get all files and folders at the top level
+  const data = await utils.getGithubFiles(repoToMigrate, '', header)
+  
+  // construct an array of possible collections
+  const possibleArr = []
+  for (const file of await data.data) {
+    if (file.type === 'dir') {
+      if (file.path[0] === '_') {
+        possibleArr.push(file.path)
+      }
+    }
+  }
+
+  // filter based on possibleArr to get the collections Arr
+  const collectionsArr = []
+  navigationObj.forEach(curr => {
+    if (possibleArr.includes(`_${utils.slugify(curr.title)}`)) {
+      collectionsArr.push(curr.title)
+    }
+  })
+
+  // loop through each collection and write the collections object
+  for (i = 0; i < collectionsArr.length; i++) {
+    const collectionData = await utils.getGithubFiles(repoToMigrate, `_${utils.slugify(collectionsArr[i])}`, header)
+    
+    // get the collections object
+    const res = await utils.getCollectionsObj(collectionData, collectionsArr[i], header, repoToMigrate)
+
+    // add to collections array
+    collections.push(res)
+  }
+  console.log(collections)
+
+  // return collections file
+  return utils.objToYaml({
+    collections
+  })
+}
+
 // modify the _config.yml file to fit V2 standards
 // takes in parsed yml objects, NOT file paths
 function configYmlModifier (confObj, homepageObj, navigationObj) {
@@ -340,6 +386,7 @@ function homepageModifier(homepageObj, homepageFields, programmesObj) {
 
 module.exports = {
   footerGenerator,
+  collectionsGenerator,
   configYmlModifier,
   navYmlModifier,
   contactUsModifier,

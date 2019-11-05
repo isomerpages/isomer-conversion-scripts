@@ -158,11 +158,104 @@ function isEmail(email) {
   return re.test(email.split(' ')[0])
 }
 
+// function to check if a character is an alphabet
+function isLetter(c) {
+  return c.toLowerCase() != c.toUpperCase();
+}
+
+// function to write a single collections object
+async function getCollectionsObj (collectionData, collectionTitle, header, repoToMigrate) {
+  const res = {
+    title: collectionTitle,
+    collection: slugify(collectionTitle),
+    collectionPages: [],
+  }
+
+  // marker to keep track of whether previous file was a third nav page
+  let isPrevThirdNav = false
+  let isThirdNav = false
+  for (const file of await collectionData.data) {
+    // boolean that says whether file is a markdown file
+    const isMd = await file.name.split('.')[file.name.split('.').length - 1] === 'md'
+    
+    if (isMd) {
+      // determine whether file is thirdnav or not
+      const filePrefix = await file.name.split('-')[0]
+
+      // if file prefix is length one and is a number
+      if (filePrefix.length === 1 && !isNaN(filePrefix)) {
+        isThirdNav = false
+      }
+
+      // if file prefix is length two and first digit is a number and second is an alphabet
+      if (filePrefix.length === 2 && !isNaN(filePrefix[0]) && isLetter(filePrefix[1])) {
+        isThirdNav = true
+      }
+      
+      // get the file on Github and get the title and permalink from the front matter
+      const collectionFile = await getFileFromGithub(header, repoToMigrate, file.path)
+      const { title, permalink, third_nav_title } = await frontMatterParser(collectionFile.content).frontMatter
+
+      // update the collections array
+      // there are 3 cases
+        // if current file is not third nav
+        // if current file is third nav, but prev file wasn't
+        // if current file is third nav and prev file also
+      if (isThirdNav) {
+        if (isPrevThirdNav) {
+          // add a new object to the subcollection
+          res.collectionPages[res.collectionPages.length - 1].subcollection.push({
+            title,
+            url: permalink,
+            filepath: file.path,
+          })
+        } else if (!isPrevThirdNav) {
+          res.collectionPages.push({
+            title: third_nav_title,
+            subcollection: [{
+              title,
+              url: permalink,
+              filepath: file.path,
+            }],
+          })
+        }
+
+        // update isPrevThirdNav
+        isPrevThirdNav = true
+
+      } else if (!isThirdNav) {
+        res.collectionPages.push({
+          title,
+          url: permalink,
+          filepath: file.path,
+        })
+
+        // update isPrevThirdNav
+        isPrevThirdNav = false
+      }
+    }
+  }
+
+  return res
+}
+
 /*
  * 
  * Github API Tools
  * 
  */
+async function getGithubFiles (repoToMigrate, pathString, header) {
+  const res = await request('GET /repos/:owner/:repo/contents/:path', {
+    owner: 'isomerpages',
+    repo: repoToMigrate,
+    path: pathString,
+    branch: 'v2Migration',
+    headers: header,
+  })
+
+  return res
+}
+
 async function getFileFromGithub (header, repoName, filePath) {
   try {
     // get branch SHA
@@ -235,6 +328,9 @@ module.exports = {
   frontMatterInsert,
   checkFrontMatter,
   contactUsLineChecker,
+  isLetter,
+  getCollectionsObj,
+  getGithubFiles,
   getFileFromGithub,
   updateFileOnGithub,
   deleteFileOnGithub,
