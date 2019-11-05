@@ -41,7 +41,8 @@ function objToYaml(yamlObj) {
 
 // takes yaml file content and returns a yaml object
 function yamlParser (file) {
-  return yaml.safeLoad(file)
+  if (file) return yaml.safeLoad(file)
+  return ''
 }
 
 // extracts yaml front matter from a markdown file path
@@ -180,7 +181,11 @@ async function getFileFromGithub (header, repoName, filePath) {
     }
   } catch(err) {
     console.log(err)
-    return
+    return {
+      content: null,
+      sha: null,
+      path: null,
+    }
   }
 }
 

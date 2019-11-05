@@ -4,6 +4,8 @@ const btoa = require('btoa')
 const utils = require('./utils')
 const migration = require('./migrationTools')
 
+console.log(process.argv)
+
 // Testing repo name
 const repoToMigrate = process.argv[4]
 
@@ -151,7 +153,7 @@ Step 2 - Add files
   // upload footer.yml
   const footer = await migration.footerGenerator(utils.yamlParser(config.content), utils.frontMatterParser(privacyMd.content).frontMatter, utils.frontMatterParser(termsMd.content).frontMatter, utils.frontMatterParser(contactUsMd.content).frontMatter, utils.yamlParser(socialMedia.content)) 
   const uploadFooter = await utils.updateFileOnGithub(header, repoToMigrate, '_data/footer.yml', footer)
-  if (uploadFooter.status === 201) console.log('footer.yml was created') 
+  if (uploadFooter.status === 201) console.log('footer.yml was created')
   
 /*
 
