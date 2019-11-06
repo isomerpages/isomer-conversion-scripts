@@ -172,7 +172,6 @@ async function getCollectionsObj (collectionData, collectionTitle, header, repoT
   }
 
   // marker to keep track of whether previous file was a third nav page
-  let isPrevThirdNav = false
   let isThirdNav = false
   for (const file of await collectionData.data) {
     // boolean that says whether file is a markdown file
@@ -194,31 +193,20 @@ async function getCollectionsObj (collectionData, collectionTitle, header, repoT
       
       // get the file on Github and get the title and permalink from the front matter
       const collectionFile = await getFileFromGithub(header, repoToMigrate, file.path)
-      const { title, permalink, third_nav_title } = await frontMatterParser(collectionFile.content).frontMatter
+      // note that second_nav_title hasn't been swapped yet here
+      const { title, permalink, second_nav_title } = await frontMatterParser(collectionFile.content).frontMatter
 
       // update the collections array
-      // there are 3 cases
+      // there are 2 cases
         // if current file is not third nav
-        // if current file is third nav, but prev file wasn't
-        // if current file is third nav and prev file also
+        // if current file is third nav
       if (isThirdNav) {
-        if (isPrevThirdNav) {
-          // add a new object to the subcollection
-          res.collectionPages[res.collectionPages.length - 1].subcollection.push({
-            title,
-            url: permalink,
-            filepath: file.path,
-          })
-        } else if (!isPrevThirdNav) {
-          res.collectionPages.push({
-            title: third_nav_title,
-            subcollection: [{
-              title,
-              url: permalink,
-              filepath: file.path,
-            }],
-          })
-        }
+        res.collectionPages.push({
+          title,
+          url: permalink,
+          filepath: file.path,
+          thirdnav: second_nav_title,
+        })
 
         // update isPrevThirdNav
         isPrevThirdNav = true
@@ -229,9 +217,6 @@ async function getCollectionsObj (collectionData, collectionTitle, header, repoT
           url: permalink,
           filepath: file.path,
         })
-
-        // update isPrevThirdNav
-        isPrevThirdNav = false
       }
     }
   }

@@ -48,7 +48,7 @@ async function collectionsGenerator (navigationObj, repoToMigrate, header) {
   // get all files and folders at the top level
   const data = await utils.getGithubFiles(repoToMigrate, '', header)
   
-  // construct an array of possible collections
+  // construct an array of all the top level folders in the repo starting with _
   const possibleArr = []
   for (const file of await data.data) {
     if (file.type === 'dir') {
@@ -59,12 +59,17 @@ async function collectionsGenerator (navigationObj, repoToMigrate, header) {
   }
 
   // filter based on possibleArr to get the collections Arr
-  const collectionsArr = []
-  navigationObj.forEach(curr => {
-    if (possibleArr.includes(`_${utils.slugify(curr.title)}`)) {
-      collectionsArr.push(curr.title)
-    }
-  })
+  // const collectionsArr = []
+  // navigationObj.forEach(curr => {
+  //   if (possibleArr.includes(`_${utils.slugify(curr.title)}`)) {
+  //     collectionsArr.push(curr.title)
+  //   }
+  // })
+
+  // remove _data, _layouts, _includes from possibleArr
+  const jekyllDefaults = new Set(['_data', '_layouts', '_includes'])
+  let collectionsArr = Array.from(new Set([...possibleArr].filter(x => !jekyllDefaults.has(x))))
+  collectionsArr = collectionsArr.map(collection => collection.slice(1))
 
   // loop through each collection and write the collections object
   for (i = 0; i < collectionsArr.length; i++) {
