@@ -104,7 +104,6 @@ function configYmlModifier (confObj, homepageObj, navigationObj) {
   const toRemove = [
     'title-abbreviated', 
     'email', 
-    'description', 
     'baseurl', 
     'markdown', 
     'twitter_username', 
