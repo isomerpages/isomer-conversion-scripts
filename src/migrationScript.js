@@ -156,9 +156,9 @@ Step 2 - Add files
   if (uploadFooter.status === 201) console.log('footer.yml was created')
 
   // upload collections.yml
-  const collections = await migration.collectionsGenerator(utils.yamlParser(navigation.content), repoToMigrate, header) 
-  const uploadCollections = await utils.updateFileOnGithub(header, repoToMigrate, '_data/collections.yml', collections)
-  if (uploadCollections.status === 201) console.log('collections.yml was created')
+  // const collections = await migration.collectionsGenerator(utils.yamlParser(navigation.content), repoToMigrate, header) 
+  // const uploadCollections = await utils.updateFileOnGithub(header, repoToMigrate, '_data/collections.yml', collections)
+  // if (uploadCollections.status === 201) console.log('collections.yml was created')
 
   
 /*
