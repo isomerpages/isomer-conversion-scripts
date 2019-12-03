@@ -2,6 +2,7 @@ const axios = require('axios')
 const btoa = require('btoa')
 const yaml = require('js-yaml')
 const base64 = require('base-64')
+const slugify = require('slugify')
 const Bluebird = require('bluebird')
 
 // name of repo
@@ -80,6 +81,11 @@ function generateResourceFileName(title, type, date) {
     return `${date}-${type}-${safeTitle}.md`;
 }
 
+// function which prepends a 0 if the number string is less than 10
+function minTwoDigits(n) {
+    return (n < 10 ? '0' : '') + n;
+  }
+
 // parse the tree and modify it
 async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     try {
@@ -112,17 +118,22 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
         * Renames all resource files in the correct {date}-{category}-{title} format
         */
         for (let i = 0; i < resourcePages.length; ++i) {
+            // get attributes from github response
             const { data: { content, path } }  = resourcePageData[i]
             const { date, title } = yaml.safeLoad(base64.decode(content).split('---')[1]);
+
+            // split the path 
+            const pathArr = path.split('/')
+            const resourceRoomNameIndex = pathArr.findIndex(element => element === resourceRoomName);
+            const type = pathArr[resourceRoomNameIndex + 1]
+
             // get the resource category
-            const type = 'category'
-            const newFileName = generateResourceFileName(title, type, date)
-            resourcePages[i].path = `${path.split('/').slice(0, path.split('/').length - 2).join('/')}/${newFileName}`
+            const newFileName = generateResourceFileName(title, type, `${date.getFullYear()}-${minTwoDigits(date.getMonth())}-${minTwoDigits(date.getDate())}`)
+            resourcePages[i].path = `${pathArr.slice(0, pathArr.length - 2).join('/')}/${newFileName}`
             console.log(title)
         }
-
-        console.log('abc')
-        return [...resourcePages, ...nonResourcePages]
+        const newTree = [...resourcePages, ...nonResourcePages]
+        return newTree
         // since they are not allowed to have forward slashes in their title,
         // we can split on forward slash
     } catch (err) {
@@ -164,10 +175,16 @@ async function sendTree(gitTree, currentCommitSha) {
     })
 }
 
-(async () => {
+
+// function which wraps the other functions and renames resource room files
+async function renameResourceFiles() {
     const resourceRoomName = await getResourceRoomName()
     const { gitTree, currentCommitSha } = await getTree()
     const newGitTree = await modifyTreeResourcePages(gitTree, resourceRoomName)
     await sendTree(newGitTree, currentCommitSha)
-    console.log(res)
+}
+
+// runs the script
+(async () => {
+    await renameResourceFiles()
 })()
