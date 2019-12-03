@@ -59,6 +59,7 @@ async function getTree() {
         })
         // Get the tree sha of the latest commit
         const { commit: { tree: { sha: treeSha } } } = commits[0]
+        const currentCommitSha = commits[0].sha
 
         const { data: { tree: gitTree } } = await axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/trees/${treeSha}?recursive=1`, {
             params: {
@@ -67,7 +68,7 @@ async function getTree() {
             headers
         })
 
-        return { gitTree };
+        return { gitTree, currentCommitSha };
     } catch (err) {
         console.log(err)
     }
@@ -107,6 +108,9 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
             })
         })
 
+        /*
+        * Renames all resource files in the correct {date}-{category}-{title} format
+        */
         for (let i = 0; i < resourcePages.length; ++i) {
             const { data: { content, path } }  = resourcePageData[i]
             const { date, title } = yaml.safeLoad(base64.decode(content).split('---')[1]);
@@ -126,22 +130,44 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     }
 }
 
-/*
-* Renames all resource files in the correct {date}-{category}-{title} format
-*/
-// async function renameResourcePages(resourceRoomName, repo, pathstring, headers) {
 
-//     try {
-      
+// send the new tree object back to Github and point the latest commit on the staging branch to it
+async function sendTree(gitTree, currentCommitSha) {
+    const { data: { sha: newTreeSha } } = await axios.post(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/trees`, {
+        tree: gitTree,
+      }, {
+        headers,
+      })
   
-//     } catch (err) {
-//         console.log(err)
-//     }
-// }
+    const baseRefEndpoint = `https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/refs`
+    const baseCommitEndpoint = `https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/commits`
+    const refEndpoint = `${baseRefEndpoint}/heads/${BRANCH_REF}`
+
+    const newCommitResp = await axios.post(baseCommitEndpoint, {
+        message: `Rename resource page files to {date}-{category}-{title} format`,
+        tree: newTreeSha,
+        parents: [currentCommitSha]
+    }, {
+        headers,
+    })
+
+    const newCommitSha = newCommitResp.data.sha
+
+    /**
+     * The `staging` branch reference will now point
+     * to `newCommitSha` instead of `currentCommitSha`
+     */
+    await axios.patch(refEndpoint, {
+        sha : newCommitSha
+    }, {
+        headers,
+    })
+}
 
 (async () => {
-    const res = await getResourceRoomName()
-    const res2 = await getTree()
-    const res3 = await modifyTreeResourcePages(res2.gitTree, res)
+    const resourceRoomName = await getResourceRoomName()
+    const { gitTree, currentCommitSha } = await getTree()
+    const newGitTree = await modifyTreeResourcePages(gitTree, resourceRoomName)
+    await sendTree(newGitTree, currentCommitSha)
     console.log(res)
 })()
