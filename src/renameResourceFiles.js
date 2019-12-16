@@ -97,7 +97,7 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
             const { path, type } = curr
             // only look at files within resources
             // only look at markdown pages, not directories
-            if (path.split('/')[0] === resourceRoomName && path.split('.')[path.split('.').length - 1] === 'md') {
+            if (path.split('/')[0] === resourceRoomName && path.split('.')[path.split('.').length - 1] === 'md' && path.split('/').length === 4) {
                 resourcePages.push(curr)
             } else {
                 nonResourcePages.push(curr)
@@ -114,26 +114,49 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
             })
         })
 
+        // delete resource pages
+        // await Bluebird.map(resourcePages, (page) => {
+        //     return axios.delete(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/contents/${page.path}`, {
+        //         params: {
+        //             "message": `Delete file: ${page.path}`,
+        //             "ref": BRANCH_REF,
+        //             "sha": page.sha,
+        //         },
+        //         headers,
+        //     })
+        // })
+
         /*
         * Renames all resource files in the correct {date}-{category}-{title} format
         */
         for (let i = 0; i < resourcePages.length; ++i) {
             // get attributes from github response
             const { data: { content, path } }  = resourcePageData[i]
-            const { date, title } = yaml.safeLoad(base64.decode(content).split('---')[1]);
+            const decodedContent = yaml.safeLoad(base64.decode(content).split('---')[1]);
+            const { date, title } = decodedContent
 
             // split the path 
             const pathArr = path.split('/')
             const resourceRoomNameIndex = pathArr.findIndex(element => element === resourceRoomName);
-            const type = pathArr[resourceRoomNameIndex + 1]
+            const type = pathArr[resourceRoomNameIndex + 2].slice(1)
+
+            const dateType = typeof date
+            let computedDate
+
+            // compute the date
+            if (dateType === 'object') {
+                computedDate = `${date.getFullYear()}-${minTwoDigits(date.getMonth())}-${minTwoDigits(date.getDate())}`
+            } else if (dateType === 'string') {
+                computedDate = date
+            }
 
             // get the resource category
-            const newFileName = generateResourceFileName(title, type, `${date.getFullYear()}-${minTwoDigits(date.getMonth())}-${minTwoDigits(date.getDate())}`)
-            resourcePages[i].path = `${pathArr.slice(0, pathArr.length - 2).join('/')}/${newFileName}`
-            console.log(title)
+            const newFileName = generateResourceFileName(title, type, computedDate)
+            resourcePages[i].path = `${pathArr.slice(0, pathArr.length - 1).join('/')}/${newFileName}`
         }
+
         const newTree = [...resourcePages, ...nonResourcePages]
-        return newTree
+        return newTree 
         // since they are not allowed to have forward slashes in their title,
         // we can split on forward slash
     } catch (err) {

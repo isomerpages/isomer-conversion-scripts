@@ -7,11 +7,11 @@ const migration = require('./migrationTools')
 console.log(process.argv)
 
 // Testing repo name
-const repoToMigrate = process.argv[4]
+const repoToMigrate = process.argv[2]
 
 // Credentials with generic header
-const PERSONAL_ACCESS_TOKEN = process.argv[3]
-const USERNAME = process.argv[2]
+const PERSONAL_ACCESS_TOKEN = process.env.PERSONAL_ACCESS_TOKEN
+const USERNAME = process.env.USERNAME
 const CREDENTIALS = `${USERNAME}:${PERSONAL_ACCESS_TOKEN}`
 const header = {
   authorization: `basic ${btoa(CREDENTIALS)}`,
