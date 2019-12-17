@@ -2,3 +2,4 @@ node_modules/
 localUtilities.js
 localMigration.js
 .env
+.vscode/
