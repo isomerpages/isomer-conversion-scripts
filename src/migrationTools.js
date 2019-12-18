@@ -178,19 +178,17 @@ function navYmlModifier(homepageObj, navigationObj) {
       }
       // remove external: true - do we need some other way to ensure integrity of URLs?
     } else if (el['external']) {
-      
       delete el['external']
 
+      // if it has sublinks, we need to determine if it is a collection or not
     } else if (el['sub-links']) {
       // rename sub-links to sublinks
       el['sublinks'] = el['sub-links']
       delete el['sub-links']
 
-      // delete external: true within sublinks as well
-      if (el['sublinks']['external']) {
-        delete el['sublinks']['external']
-      }
-    }  
+      el['collection'] = utils.slugify(el['title'])
+    }
+
     return el
   })
 
