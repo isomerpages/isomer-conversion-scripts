@@ -117,25 +117,29 @@ function navYmlModifier(homepageObj, navigationObj) {
   // get the agency logo
   const logo = homepageObj['agency-logo']
 
+  // get the resources room title
+  const resourcesTitle = homepageObj['resources-title']
+
   // modifications to objects in navigation.yml
   navigationObj = navigationObj.map(el => {
     // modify resource room object
-    if (el['title'] === 'Resources') {
+    if (el['title'] === resourcesTitle) {
       return {
-        title: 'Resources',
+        title: resourcesTitle,
         resource_room: true,
       }
-      // remove external: true - do we need some other way to ensure integrity of URLs?
-    } else if (el['external']) {
-      delete el['external']
 
       // if it has sublinks, we need to determine if it is a collection or not
     } else if (el['sub-links']) {
-      // rename sub-links to sublinks
-      el['sublinks'] = el['sub-links']
-      delete el['sub-links']
+      if (el['false_collection'] === true) {
+        // rename sub-links to sublinks
+        el['sublinks'] = el['sub-links']
+      } else {
+        el['collection'] = utils.slugify(el['title'])
+      }
 
-      el['collection'] = utils.slugify(el['title'])
+      // delete sub-links attribute
+      delete el['sub-links']
     }
 
     return el
