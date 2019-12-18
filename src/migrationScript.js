@@ -9,6 +9,10 @@ console.log(process.argv)
 // Testing repo name
 const repoToMigrate = process.argv[2]
 
+// Retrieve env variables
+const GITHUB_ORG_NAME = process.env.GITHUB_ORG_NAME
+const BRANCH_REF = process.env.BRANCH_REF
+
 // Credentials with generic header
 const PERSONAL_ACCESS_TOKEN = process.env.PERSONAL_ACCESS_TOKEN
 const USERNAME = process.env.USERNAME
@@ -36,9 +40,9 @@ async function getStagingSHA (repoName) {
   try {
     // get branch SHA
     const data = await request('GET /repos/:owner/:repo/branches/:branch', {
-      owner: 'isomerpages',
+      owner: GITHUB_ORG_NAME,
       repo: repoName,
-      branch: 'staging',
+      branch: BRANCH_REF,
       headers: {
         authorization: `basic ${btoa(CREDENTIALS)}`,
         accept: 'application/json',
@@ -58,7 +62,7 @@ async function createBranchFunction (repoName, branchName) {
   try {
     // create branch 
     const data = await request('POST /repos/:owner/:repo/git/refs', {
-      owner: 'isomerpages',
+      owner: 'GITHUB_ORG_NAME',
       repo: repoName,
       ref: `refs/heads/${branchName}`,
       sha: await getStagingSHA(repoName),
@@ -82,7 +86,7 @@ async function deleteBranchFunction (repoName, branchName) {
   try {
     // delete branch 
     const data = await request('DELETE /repos/:owner/:repo/git/refs/:ref', {
-      owner: 'isomerpages',
+      owner: 'GITHUB_ORG_NAME',
       repo: repoName,
       ref: `heads/${branchName}`,
       headers: {
@@ -214,7 +218,7 @@ async function getRepoContents (pathString) {
   */
   try {
     const data = await request('GET /repos/:owner/:repo/contents/:path', {
-      owner: 'isomerpages',
+      owner: 'GITHUB_ORG_NAME',
       repo: repoToMigrate,
       path: pathString,
       branch: 'v2Migration',
