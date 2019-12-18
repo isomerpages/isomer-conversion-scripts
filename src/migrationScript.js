@@ -62,7 +62,7 @@ async function createBranchFunction (repoName, branchName) {
   try {
     // create branch 
     const data = await request('POST /repos/:owner/:repo/git/refs', {
-      owner: 'GITHUB_ORG_NAME',
+      owner: GITHUB_ORG_NAME,
       repo: repoName,
       ref: `refs/heads/${branchName}`,
       sha: await getStagingSHA(repoName),
@@ -86,7 +86,7 @@ async function deleteBranchFunction (repoName, branchName) {
   try {
     // delete branch 
     const data = await request('DELETE /repos/:owner/:repo/git/refs/:ref', {
-      owner: 'GITHUB_ORG_NAME',
+      owner: GITHUB_ORG_NAME,
       repo: repoName,
       ref: `heads/${branchName}`,
       headers: {
@@ -218,7 +218,7 @@ async function getRepoContents (pathString) {
   */
   try {
     const data = await request('GET /repos/:owner/:repo/contents/:path', {
-      owner: 'GITHUB_ORG_NAME',
+      owner: GITHUB_ORG_NAME,
       repo: repoToMigrate,
       path: pathString,
       branch: 'v2Migration',
