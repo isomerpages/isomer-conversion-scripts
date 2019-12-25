@@ -351,7 +351,6 @@ function indexModifier(homepageFields, homepageObj, programmesObj, indexMd) {
 
 module.exports = {
   footerGenerator,
-  // collectionsGenerator,
   configYmlModifier,
   navYmlModifier,
   contactUsModifier,

@@ -165,26 +165,11 @@ Step 2 - Add files
   const uploadFooter = await utils.updateFileOnGithub(header, repoToMigrate, '_data/footer.yml', footer);
   if (uploadFooter.status === 201) console.log('footer.yml was created');
 
-  // upload collections.yml
-  // const collections = await migration.collectionsGenerator(
-  //   utils.yamlParser(navigation.content),
-  //   repoToMigrate,
-  //   header,
-  // )
-  // const uploadCollections = await utils.updateFileOnGithub(
-  //   header,
-  //   repoToMigrate,
-  //   '_data/collections.yml',
-  //   collections,
-  // )
-  // if (uploadCollections.status === 201) console.log('collections.yml was created')
-
-
   /*
 
-Step 3 - Modify files
+  Step 3 - Modify files
 
-*/
+  */
 
   // modify _config.yml file
   const configResults = await migration.configYmlModifier(
@@ -271,60 +256,36 @@ async function getRepoContents(pathString) {
 
     // run a recursive search over all the files - insert a try catch around the get and update
     // functions
-    // await Bluebird.map(data, async (file) => {
-    //   // the files we want to modify are:
-    //   // files, not folders
-    //   // markdown files which have front matter
+    await Bluebird.each(data, async (file) => {
+      // the files we want to modify are:
+      // files, not folders
+      // markdown files which have front matter
 
-    //   // boolean that says whether file is a markdown file
-    //   const isMd = file.name.split('.')[file.name.split('.').length - 1] === 'md';
-    //   if (file.type === 'dir') {
-    //     console.log(file.path);
-    //     await getRepoContents(file.path);
-    //   }
-
-    //   if (file.type === 'file' && isMd) {
-    //     console.log(file.path);
-    //     // check file for whether it has front matter
-    //     return utils.getFileFromGithub(header, repoToMigrate, file.path).then(({ content, sha, path }) => {
-    //       if (utils.checkFrontMatter(content)) {
-    //         return utils.frontMatterInsert(content, {}).then((res) => (
-    //           utils.updateFileOnGithub(header, repoToMigrate, path, res, sha)
-    //         ));
-    //       }
-    //     });
-    //   }
-    // });
-
-    for (const file of data) {
-    //   // the files we want to modify are:
-    //   // files, not folders
-    //   // markdown files which have front matter
-
-    //   // boolean that says whether file is a markdown file
-      const isMd = await file.name.split('.')[file.name.split('.').length - 1] === 'md';
+      // boolean that says whether file is a markdown file
+      const isMd = file.name.split('.')[file.name.split('.').length - 1] === 'md';
 
       if (file.type === 'dir') {
-        console.log(await file.path);
+        console.log(file.path);
         await getRepoContents(file.path);
-      } else if (file.type === 'file' && isMd) {
-        // check file for whether it has front matter
-        try {
-          const { content, sha } = await utils.getFileFromGithub(header, repoToMigrate, file.path);
-          if (utils.checkFrontMatter(await content)) {
-            // put them through front matter insert to remove unncessary fields
-            const res = await utils.frontMatterInsert(content, {});
-            // update the file
-            await utils.updateFileOnGithub(header, repoToMigrate, file.path, res, sha);
-          }
-          console.log(await file.path);
-        } catch (err) {
-          console.log(err);
-        }
       }
-    }
+
+      if (file.type === 'file' && isMd) {
+        console.log(file.path);
+        // check file for whether it has front matter
+        // eslint-disable-next-line max-len
+        return utils.getFileFromGithub(header, repoToMigrate, file.path).then(({ content, sha }) => {
+          if (utils.checkFrontMatter(content)) {
+            // put them through front matter insert to remove unncessary fields
+            const res = utils.frontMatterInsert(content, {});
+            // update the file
+            return utils.updateFileOnGithub(header, repoToMigrate, file.path, res, sha);
+          }
+        });
+      }
+    });
   } catch (err) {
     // *** log error - to do: develop more sophisticated error detection techniques
+    console.log(err);
     console.log('No further child files');
   }
 }

@@ -167,66 +167,6 @@ function isLetter(c) {
   return c.toLowerCase() !== c.toUpperCase();
 }
 
-// function to write a single collections object
-async function getCollectionsObj(collectionData, collectionTitle, header, repoToMigrate) {
-  const res = {
-    title: collectionTitle,
-    collection: slugify(collectionTitle),
-    collectionPages: [],
-  };
-
-  // marker to keep track of whether previous file was a third nav page
-  let isThirdNav = false;
-  for (const file of await collectionData.data) {
-    // boolean that says whether file is a markdown file
-    const isMd = await file.name.split('.')[file.name.split('.').length - 1] === 'md';
-
-    if (isMd) {
-      // determine whether file is thirdnav or not
-      const filePrefix = await file.name.split('-')[0];
-
-      // if file prefix is length one and is a number
-      if (filePrefix.length === 1 && !isNaN(filePrefix)) {
-        isThirdNav = false;
-      }
-
-      // if file prefix is length two and first digit is a number and second is an alphabet
-      if (filePrefix.length === 2 && !isNaN(filePrefix[0]) && isLetter(filePrefix[1])) {
-        isThirdNav = true;
-      }
-
-      // get the file on Github and get the title and permalink from the front matter
-      const collectionFile = await getFileFromGithub(header, repoToMigrate, file.path);
-      // note that second_nav_title hasn't been swapped yet here
-      const { title, permalink, second_nav_title } = await frontMatterParser(collectionFile.content).frontMatter;
-
-      // update the collections array
-      // there are 2 cases
-      // if current file is not third nav
-      // if current file is third nav
-      if (isThirdNav) {
-        res.collectionPages.push({
-          title,
-          url: permalink,
-          filepath: file.path,
-          thirdnav: second_nav_title,
-        });
-
-        // update isPrevThirdNav
-        isPrevThirdNav = true;
-      } else if (!isThirdNav) {
-        res.collectionPages.push({
-          title,
-          url: permalink,
-          filepath: file.path,
-        });
-      }
-    }
-  }
-
-  return res;
-}
-
 /*
  *
  * Github API Tools
