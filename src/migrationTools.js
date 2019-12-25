@@ -102,7 +102,7 @@ function configYmlModifier(confObject, homepageObject, navigationObject) {
     const collectionKeys = Object.keys(confObj.collections);
 
     // loop through titles in navigation yml file
-    navigationObj.forEach((navObj) => {
+    Object.values(navigationObj).forEach((navObj) => {
       // match them with collection titles
       collectionKeys.forEach((el) => {
         if (utils.slugify(navObj.title) === el) {
@@ -130,7 +130,7 @@ function navYmlModifier(homepageObject, navigationObject) {
   const resourcesTitle = homepageObj['resources-title'];
 
   // modifications to objects in navigation.yml
-  navigationObj = navigationObj.map((el) => {
+  navigationObj = Object.values(navigationObj).map((el) => {
     // modify resource room object
     if (el.title === resourcesTitle) {
       return {

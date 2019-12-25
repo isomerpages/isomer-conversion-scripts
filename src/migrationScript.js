@@ -1,7 +1,9 @@
+/* eslint-disable no-console */
 /* eslint-disable consistent-return */
 // import dependencies
 const { request } = require('@octokit/request');
 const btoa = require('btoa');
+const Bluebird = require('bluebird');
 const utils = require('./utils');
 const migration = require('./migrationTools');
 
@@ -21,7 +23,7 @@ const header = {
   accept: 'application/json',
 };
 
-// the steps are:
+// Procedure
 // 1. create a new branch which forks off staging if it doesn't exist
 // 2. add files
 // 3. modify files
@@ -231,13 +233,21 @@ Step 3 - Modify files
 Step 4 - Remove files
 
 */
-  const pagesToDel = [homepage, contactUs, careersStories, products, programmes, resources, socialMedia];
-  // since async doesn't work with forEach
-  for (const page of pagesToDel) {
-    if (page) {
-      await utils.deleteFileOnGithub(header, repoToMigrate, page.path, page.sha);
+  const pagesToDel = [
+    homepage,
+    contactUs,
+    careersStories,
+    products,
+    programmes,
+    resources,
+    socialMedia,
+  ];
+
+  await Bluebird.each(pagesToDel, (page) => {
+    if (page.path) {
+      return utils.deleteFileOnGithub(header, repoToMigrate, page.path, page.sha);
     }
-  }
+  });
 }
 
 
@@ -250,7 +260,7 @@ async function getRepoContents(pathString) {
   @username is the user's Github username as a string (case-sensitive)
   */
   try {
-    const data = await request('GET /repos/:owner/:repo/contents/:path', {
+    const { data } = await request('GET /repos/:owner/:repo/contents/:path', {
       owner: GITHUB_ORG_NAME,
       repo: repoToMigrate,
       path: pathString,
@@ -259,13 +269,39 @@ async function getRepoContents(pathString) {
     });
 
 
-    // run a recursive search over all the files - insert a try catch around the get and update functions
-    for (const file of await data.data) {
-      // the files we want to modify are:
-      // files, not folders
-      // markdown files which have front matter
+    // run a recursive search over all the files - insert a try catch around the get and update
+    // functions
+    // await Bluebird.map(data, async (file) => {
+    //   // the files we want to modify are:
+    //   // files, not folders
+    //   // markdown files which have front matter
 
-      // boolean that says whether file is a markdown file
+    //   // boolean that says whether file is a markdown file
+    //   const isMd = file.name.split('.')[file.name.split('.').length - 1] === 'md';
+    //   if (file.type === 'dir') {
+    //     console.log(file.path);
+    //     await getRepoContents(file.path);
+    //   }
+
+    //   if (file.type === 'file' && isMd) {
+    //     console.log(file.path);
+    //     // check file for whether it has front matter
+    //     return utils.getFileFromGithub(header, repoToMigrate, file.path).then(({ content, sha, path }) => {
+    //       if (utils.checkFrontMatter(content)) {
+    //         return utils.frontMatterInsert(content, {}).then((res) => (
+    //           utils.updateFileOnGithub(header, repoToMigrate, path, res, sha)
+    //         ));
+    //       }
+    //     });
+    //   }
+    // });
+
+    for (const file of data) {
+    //   // the files we want to modify are:
+    //   // files, not folders
+    //   // markdown files which have front matter
+
+    //   // boolean that says whether file is a markdown file
       const isMd = await file.name.split('.')[file.name.split('.').length - 1] === 'md';
 
       if (file.type === 'dir') {

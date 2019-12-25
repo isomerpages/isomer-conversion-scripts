@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable consistent-return */
 /* eslint-disable no-plusplus */
 // import dependencies required to import files
@@ -86,7 +87,11 @@ function frontMatterInsert(markdownFileContent, newData) {
 
   // if layout is leftnav-page, leftnav-page-content, or simple-page, we can
   // remove the layout
-  if (frontMatter.layout === 'leftnav-page' || frontMatter.layout === 'leftnav-page-content' || frontMatter.layout === 'simple-page') {
+  if (frontMatter.layout === 'leftnav-page'
+    || frontMatter.layout === 'leftnav-page-content'
+    || frontMatter.layout === 'simple-page'
+    || frontMatter.layout === 'post'
+  ) {
     delete frontMatter.layout;
   }
   // remove last-updated, collection_name if present
@@ -295,7 +300,7 @@ async function deleteFileOnGithub(header, repoName, filePath, sha) {
       sha,
       headers: header,
     });
-
+    console.log(`Deleted ${filePath}`);
     return data;
   } catch (err) {
     console.log(err);
