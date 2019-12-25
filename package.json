@@ -4,7 +4,9 @@
   "description": "Running the scripts in this folder will allow you to modify the code in an Isomer V1 repository to be compatible with Isomer V2 templates.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --ext .js --ext .jsx --ignore-path .gitignore .",
+    "lint-fix": "eslint --ignore-path .gitignore . --fix"
   },
   "repository": {
     "type": "git",
@@ -26,5 +28,10 @@
     "js-yaml": "^3.13.1",
     "slugify": "^1.3.6",
     "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.19.1"
   }
 }
