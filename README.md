@@ -2,10 +2,10 @@
 
 ### How to use
 1. Source your environment variables. The variables you will require are:
-- Github username
-- Personal access token
-- Organization name
-- Branch
+- `PERSONAL_ACCESS_TOKEN` (Github personal access token)
+- `USERNAME` (Github username)
+- `GITHUB_ORG_NAME` (isomerpages)
+- `BRANCH_REF` (usually staging)
 
 Ideally, this should be done by the designated team account, not with your personal account.
 
