@@ -87,9 +87,8 @@ function minTwoDigits(n) {
   return (n < 10 ? '0' : '') + n;
 }
 
-// retrieve resource files to create new files with the correct
-// titles and delete old files
-async function retrieveResourceFiles(gitTree, resourceRoomName) {
+// parse the tree and modify it
+async function modifyTreeResourcePages(gitTree, resourceRoomName) {
   try {
     // separate resource pages from non resource pages
     const resourcePages = [];
@@ -101,7 +100,7 @@ async function retrieveResourceFiles(gitTree, resourceRoomName) {
       // only look at markdown pages, not directories
       if (path.split('/')[0] === resourceRoomName && path.split('.')[path.split('.').length - 1] === 'md' && path.split('/').length === 4) {
         resourcePages.push(curr);
-      } else {
+      } else if (type !== 'tree') {
         nonResourcePages.push(curr);
       }
     });
@@ -114,7 +113,9 @@ async function retrieveResourceFiles(gitTree, resourceRoomName) {
       headers,
     }));
 
-    // create new resource pages
+    /*
+    * Renames all resource files in the correct {date}-{category}-{title} format
+    */
     for (let i = 0; i < resourcePageData.length; i++) {
       // get attributes from github response
       const { data: { content, path } } = resourcePageData[i];
@@ -136,38 +137,66 @@ async function retrieveResourceFiles(gitTree, resourceRoomName) {
         computedDate = date;
       }
 
-      // create the resource files
+      // get the resource category
       const newFileName = generateResourceFileName(title, type, computedDate);
-      const newFilePath = `${pathArr.slice(0, pathArr.length - 1).join('/')}/${newFileName}`;
-      await axios.put(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/contents/${newFilePath}`, {
-        message: 'Rename new resource file in {date}-{type}-{title} format',
-        content,
-        branch: BRANCH_REF,
-      }, { headers });
+      resourcePages[i].path = `${pathArr.slice(0, pathArr.length - 1).join('/')}/${newFileName}`;
     }
 
-    // delete resource pages
-    for (let i = 0; i < resourcePages.length; i++) {
-      const page = resourcePages[i];
-      await axios.delete(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/contents/${page.path}`, {
-        params: {
-          message: `Delete file: ${page.path}`,
-          ref: BRANCH_REF,
-          sha: page.sha,
-        },
-        headers,
-      });
-    }
+    const newTree = [...resourcePages, ...nonResourcePages];
+    return newTree;
+    // since they are not allowed to have forward slashes in their title,
+    // we can split on forward slash
   } catch (err) {
     console.log(err);
   }
 }
 
+// send the new tree object back to Github and point the latest commit on the staging branch to it
+async function sendTree(gitTree, currentCommitSha) {
+  const resp = await axios.post(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/trees`, {
+    tree: gitTree,
+  }, {
+    headers,
+  });
+
+  const { data: { sha: newTreeSha } } = resp;
+
+  const baseRefEndpoint = `https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/refs`;
+  const baseCommitEndpoint = `https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/commits`;
+  const refEndpoint = `${baseRefEndpoint}/heads/${BRANCH_REF}`;
+
+  const newCommitResp = await axios.post(baseCommitEndpoint, {
+    message: 'Rename resource page files to {date}-{category}-{title} format',
+    tree: newTreeSha,
+    parents: [currentCommitSha],
+  }, {
+    headers,
+  });
+
+  const newCommitSha = newCommitResp.data.sha;
+
+  /**
+   * The `staging` branch reference will now point
+   * to `newCommitSha` instead of `currentCommitSha`
+   */
+  await axios.patch(refEndpoint, {
+    sha: newCommitSha,
+    force: true,
+  }, {
+    headers,
+  });
+}
+
 // function which wraps the other functions and renames resource room files
 async function renameResourceFiles() {
-  const resourceRoomName = await getResourceRoomName();
-  const { gitTree } = await getTree();
-  await retrieveResourceFiles(gitTree, resourceRoomName);
+  try {
+    const resourceRoomName = await getResourceRoomName();
+    const { gitTree, currentCommitSha } = await getTree();
+    const newGitTree = await modifyTreeResourcePages(gitTree, resourceRoomName);
+    await sendTree(newGitTree, currentCommitSha);
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 // runs the script
