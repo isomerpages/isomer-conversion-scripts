@@ -102,9 +102,9 @@ function configYmlModifier(confObject, homepageObject, navigationObject) {
     const collectionKeys = Object.keys(confObj.collections);
 
     // loop through titles in navigation yml file
-    navigationObj.map((navObj) => {
+    navigationObj.forEach((navObj) => {
       // match them with collection titles
-      collectionKeys.map((el) => {
+      collectionKeys.forEach((el) => {
         if (utils.slugify(navObj.title) === el) {
           confObj.collections[el].permalink = permalinkTemplate;
         }
@@ -142,15 +142,12 @@ function navYmlModifier(homepageObject, navigationObject) {
     } if (el['sub-links']) {
       if (el.false_collection === true) {
         // rename sub-links to sublinks
-        // 
         el.sublinks = el['sub-links'];
       } else {
-        // 
         el.collection = utils.slugify(el.title);
       }
 
       // delete sub-links attribute
-      // 
       delete el['sub-links'];
     }
 
@@ -177,7 +174,6 @@ function contactUsModifier(contactUsObject, contactUsMarkdown) {
     contactUsObj.contacts.forEach((curr) => {
       if (curr.content) {
         // replace individual elements in content
-        // 
         curr.content = curr.content.map((ele) => utils.contactUsLineChecker(ele.line));
       }
     });
