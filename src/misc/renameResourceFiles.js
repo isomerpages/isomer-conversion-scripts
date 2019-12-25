@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable no-plusplus */
 /* eslint-disable consistent-return */
 const axios = require('axios');
