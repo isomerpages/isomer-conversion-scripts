@@ -95,22 +95,22 @@ function configYmlModifier(confObject, homepageObject, navigationObject) {
   confObj.plugins = ['jekyll-feed', 'jekyll-assets', 'jekyll-paginate', 'jekyll-sitemap'];
 
   // permalink template
-  const permalinkTemplate = '/:collection/:path/:title';
+  // const permalinkTemplate = '/:collection/:path/:title';
 
   // add permalink template to each collection if they can be found in navigation.yml
-  if (confObj.collections) {
-    const collectionKeys = Object.keys(confObj.collections);
+  // if (confObj.collections) {
+  //   const collectionKeys = Object.keys(confObj.collections);
 
-    // loop through titles in navigation yml file
-    Object.values(navigationObj).forEach((navObj) => {
-      // match them with collection titles
-      collectionKeys.forEach((el) => {
-        if (utils.slugify(navObj.title) === el) {
-          confObj.collections[el].permalink = permalinkTemplate;
-        }
-      });
-    });
-  }
+  //   // loop through titles in navigation yml file
+  //   Object.values(navigationObj).forEach((navObj) => {
+  //     // match them with collection titles
+  //     collectionKeys.forEach((el) => {
+  //       if (utils.slugify(navObj.title) === el) {
+  //         confObj.collections[el].permalink = permalinkTemplate;
+  //       }
+  //     });
+  //   });
+  // }
 
   return {
     confObj,

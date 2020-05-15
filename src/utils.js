@@ -257,7 +257,7 @@ module.exports = {
   checkFrontMatter,
   contactUsLineChecker,
   isLetter,
-  getCollectionsObj,
+  // getCollectionsObj,
   getGithubFiles,
   getFileFromGithub,
   updateFileOnGithub,
