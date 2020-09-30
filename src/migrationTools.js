@@ -209,8 +209,6 @@ function homepageModifier(homepageObj, homepageFields, programmesObj) {
   // various empty objects to store results
   const sections = [{ hero: {} }];
   const resources = {};
-  const carousel = [];
-  const notification = 'This website is in beta - your valuable <a href=\"https://www.google.com\">feedback</a> will help us in improving it.';
 
   /*
 
@@ -257,20 +255,6 @@ function homepageModifier(homepageObj, homepageFields, programmesObj) {
       });
     });
   }
-
-  // carousel
-  if (programmesObj) {
-    programmesObj.forEach((curr) => {
-      carousel.push({
-        title: curr.title,
-        subtitle: curr.category,
-        description: curr.desc,
-        image: curr.img,
-        'bg-color': curr['bg-color'],
-      });
-    });
-  }
-  sections.push({ carousel });
 
   // resources
   if (homepageFields.resources) {
