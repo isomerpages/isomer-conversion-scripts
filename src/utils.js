@@ -32,11 +32,60 @@ function concatFrontMatterMdBody(frontMatter, mdBody) {
   return ['---\n', `${YAML.stringify(frontMatter, { schema: 'core' })}\n`, '---\n', mdBody].join('');
 }
 
+// Cleans up converted yaml content
+function cleanupYaml(yamlContent) {
+  let isPrevElBullet = false
+  let isPrevWithinBullet = false
+  const cleanedYaml = yamlContent.split('\n').reduce((acc, curr, idx) => {
+    if (idx === 0) return acc + curr
+
+    if (isPrevElBullet) {
+      // Assumption that if previous element was a bullet, then this element will not be a bullet
+      isPrevElBullet = false
+
+      // Enter bullet point
+      isPrevWithinBullet = true
+
+      // If previous element was a bullet point, we just concatenate the strings together
+      return acc + ' ' + curr.trim()
+    } else {
+      // Not in bullet point
+      if (curr.trim() === '-') {
+        // Current element is A bullet point
+        isPrevElBullet = true
+      } else {
+        // Current element is not a bullet point - so it could either be within a bullet point, or a top-level attribute
+        isPrevElBullet = false
+
+        // Check whether the previous row is within a bullet point or not
+        if (isPrevWithinBullet) {
+
+          // Top-level attribute
+          if (curr.trim() === curr) {
+            return acc + '\n' + curr
+          }
+
+          // Current row is within a bullet as well
+          return acc + '\n' + curr.slice(2)
+        }
+      }
+
+      // Reset to being outside the bullet
+      isPrevWithinBullet = false
+      return acc + '\n' + curr
+    }
+  }, '')
+
+  return cleanedYaml
+}
+
 // object to yaml converter
 // eslint-disable-next-line consistent-return
 function objToYaml(yamlObj) {
   try {
-    return YAML.stringify(yamlObj, { schema: 'core' });
+    const yamlContent = YAML.stringify(yamlObj, { schema: 'core' });
+    const cleanedYaml = cleanupYaml(yamlContent)
+    return cleanedYaml
   } catch (err) {
     console.log(err);
   }
