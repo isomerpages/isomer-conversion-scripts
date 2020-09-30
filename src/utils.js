@@ -102,7 +102,7 @@ function frontMatterParser(markdownFileContent) {
   // format file to extract yaml front matter
   const contents = markdownFileContent.split('---');
   const articleConfig = contents[1];
-  const articleContent = contents[2];
+  const articleContent = contents.slice(2).join('---');
 
   // get the configs
   const frontMatter = yaml.safeLoad(articleConfig);
