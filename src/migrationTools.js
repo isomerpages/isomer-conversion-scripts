@@ -134,7 +134,7 @@ function navYmlModifier(homepageObject, navigationObject) {
     // modify resource room object
     if (el.title === resourcesTitle || resourcesTitle.includes(el.title)) {
       return {
-        title: resourcesTitle,
+        title: el.title,
         resource_room: true,
       };
 
