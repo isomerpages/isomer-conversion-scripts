@@ -29,7 +29,7 @@ function slugify(name) {
 
 // concatenates front matter to a body of text
 function concatFrontMatterMdBody(frontMatter, mdBody) {
-  return ['---\n', `${YAML.stringify(frontMatter, { schema: 'core' })}\n`, '---\n', mdBody].join('');
+  return ['---\n', `${cleanupYaml(YAML.stringify(frontMatter, { schema: 'core' }))}\n`, '---\n', mdBody].join('');
 }
 
 // Cleans up converted yaml content
