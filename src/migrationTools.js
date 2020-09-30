@@ -252,7 +252,7 @@ function homepageModifier(homepageObj, homepageFields, programmesObj) {
           description: curr['section-description'],
           url: curr['section-more-button-url'],
           image: curr['section-image-path'],
-          alt: curr['section-image-alt'],
+          alt: curr['section-image-alt'] || 'alt text',
           button: curr['section-more-button'],
         },
       });
