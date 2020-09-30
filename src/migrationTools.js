@@ -320,7 +320,6 @@ function homepageModifier(homepageObj, homepageFields, programmesObj) {
   }
 
   return ({
-    notification,
     sections,
   });
 }
