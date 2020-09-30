@@ -132,7 +132,7 @@ function navYmlModifier(homepageObject, navigationObject) {
   // modifications to objects in navigation.yml
   navigationObj = Object.values(navigationObj).map((el) => {
     // modify resource room object
-    if (el.title === resourcesTitle) {
+    if (el.title === resourcesTitle || resourcesTitle.toLowerCase().includes(el.title.toLowerCase())) {
       return {
         title: resourcesTitle,
         resource_room: true,
