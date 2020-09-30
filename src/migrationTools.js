@@ -132,7 +132,7 @@ function navYmlModifier(homepageObject, navigationObject) {
   // modifications to objects in navigation.yml
   navigationObj = Object.values(navigationObj).map((el) => {
     // modify resource room object
-    if (el.title === resourcesTitle || resourcesTitle.toLowerCase().includes(el.title.toLowerCase())) {
+    if (el.title === resourcesTitle || resourcesTitle.includes(el.title)) {
       return {
         title: resourcesTitle,
         resource_room: true,
@@ -150,6 +150,9 @@ function navYmlModifier(homepageObject, navigationObject) {
       // delete sub-links attribute
       delete el['sub-links'];
     }
+
+    // if it's a collection, it doesn't need the url attribute
+    if (el.collection) delete el['url']
 
     return el;
   });
