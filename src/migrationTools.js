@@ -132,14 +132,15 @@ function navYmlModifier(homepageObject, navigationObject) {
   // modifications to objects in navigation.yml
   navigationObj = Object.values(navigationObj).map((el) => {
     // modify resource room object
-    if (el.title === resourcesTitle || resourcesTitle.includes(el.title)) {
+    if (el.title === resourcesTitle) {
       return {
         title: el.title,
         resource_room: true,
       };
+    } 
 
-      // if it has sublinks, we need to determine if it is a collection or not
-    } if (el['sub-links']) {
+    // if it has sublinks, we need to determine if it is a collection or not
+    if (el['sub-links']) {
       if (el.false_collection === true) {
         // rename sub-links to sublinks
         el.sublinks = el['sub-links'];
