@@ -200,19 +200,20 @@ Step 2 - Add files
   if (uploadIndex.status === 200) console.log('index.md was updated');
 
   // modify contact-us.md
-  const contactUsResults = await migration.contactUsModifier(
-    utils.yamlParser(contactUs.content),
-    contactUsMd.content,
-  );
-  const uploadContactUs = await utils.updateFileOnGithub(
-    header,
-    repoToMigrate,
-    'pages/contact-us.md',
-    contactUsResults,
-    contactUsMd.sha,
-  );
-  if (uploadContactUs.status === 200) console.log('contact-us.md was updated');
-
+  if (contactUs.content) {
+    const contactUsResults = await migration.contactUsModifier(
+      utils.yamlParser(contactUs.content),
+      contactUsMd.content,
+    );
+    const uploadContactUs = await utils.updateFileOnGithub(
+      header,
+      repoToMigrate,
+      'pages/contact-us.md',
+      contactUsResults,
+      contactUsMd.sha,
+    );
+    if (uploadContactUs.status === 200) console.log('contact-us.md was updated');
+  }
   /*
 
 Step 4 - Remove files

@@ -100,6 +100,12 @@ function yamlParser(file) {
 // extracts yaml front matter from a markdown file path
 function frontMatterParser(markdownFileContent) {
   // format file to extract yaml front matter
+  if (!markdownFileContent) {
+    return {
+      frontMatter: undefined,
+      mdBody: undefined,
+    };
+  }
   const contents = markdownFileContent.split('---');
   const articleConfig = contents[1];
   const articleContent = contents.slice(2).join('---');
