@@ -209,7 +209,7 @@ function contactUsModifier(contactUsObject, contactUsMarkdown) {
 // programmes.yml file path
 // as objects, and returns the relevant data needed to modify index.md's
 // front matter
-function homepageModifier(homepageObj, homepageFields, programmesObj) {
+function homepageModifier(homepageObj, homepageFields, notificationContent) {
   // various empty objects to store results
   const sections = [{ hero: {} }];
   const resources = {};
@@ -320,15 +320,30 @@ function homepageModifier(homepageObj, homepageFields, programmesObj) {
     });
   }
 
-  return ({
+  const res = {
     sections,
-  });
+  }
+
+  if (notificationContent) res.notification = notificationContent
+
+  return res;
+}
+
+function extractNotificationContent (indexMd) {
+  const { mdBody: indexMdContent } = utils.frontMatterParser(indexMd)
+  const indexMdContentArr = indexMdContent.split('-->')
+  // Assumption: that the substring `-->` is not used in the notification string
+  const parsedNotificationContent = indexMdContentArr.length > 1 ? indexMdContentArr[1] : indexMdContentArr[0]
+  return parsedNotificationContent
 }
 
 // modify index.md file, which requires homepageModifier
 function indexModifier(homepageFields, homepageObj, programmesObj, indexMd) {
+  // extract notification data if any
+  const notificationContent = extractNotificationContent(indexMd)
+
   // update the homepage yml data
-  const newData = homepageModifier(homepageObj, homepageFields, programmesObj);
+  const newData = homepageModifier(homepageObj, homepageFields, notificationContent);
 
   // update the front matter
   const res = utils.frontMatterInsert(indexMd, newData);
