@@ -264,8 +264,9 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
   if (homepageFields.resources) {
     Object.assign(resources, {
       resources: {
-        title: homepageObj['resources-title'],
-        subtitle: homepageObj['resources-subtitle'],
+        // Title and subtitle are swapped due to an error in the V2 template
+        title: homepageObj['resources-subtitle'],
+        subtitle: homepageObj['resources-title'],
         button: homepageObj['resources-more-button'],
         url: homepageObj['resources-more-button-url'],
       },
