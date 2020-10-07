@@ -347,7 +347,8 @@ function indexModifier(homepageFields, homepageObj, programmesObj, indexMd) {
   const newData = homepageModifier(homepageObj, homepageFields, notificationContent);
 
   // update the front matter
-  const res = utils.frontMatterInsert(indexMd, newData);
+  const isIndex = true
+  const res = utils.frontMatterInsert(indexMd, newData, isIndex);
 
   return res;
 }
