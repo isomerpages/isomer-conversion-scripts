@@ -28,8 +28,13 @@ function slugify(name) {
 }
 
 // concatenates front matter to a body of text
-function concatFrontMatterMdBody(frontMatter, mdBody) {
-  return ['---\n', `${cleanupYaml(YAML.stringify(frontMatter, { schema: 'core' }))}\n`, '---\n', mdBody].join('');
+function concatFrontMatterMdBody(frontMatter, mdBody, isIndex) {
+  const contentArr = ['---\n', `${cleanupYaml(YAML.stringify(frontMatter, { schema: 'core' }))}\n`, '---\n']
+
+  // If index file, return without markdown text content
+  // Otherwise, add markdown text content
+  if (!isIndex) contentArr.push(mdBody)
+  return contentArr.join('');
 }
 
 // Cleans up converted yaml content
@@ -132,7 +137,7 @@ function checkFrontMatter(markdownFileContent) {
 
 // takes in markdown file and a javascript object containing new data
 // and updates the front matter in the markdown file with the javascript object
-function frontMatterInsert(markdownFileContent, newData) {
+function frontMatterInsert(markdownFileContent, newData, isIndex) {
   const { frontMatter, mdBody } = frontMatterParser(markdownFileContent);
 
   // change the layout for contact-us page
@@ -166,7 +171,7 @@ function frontMatterInsert(markdownFileContent, newData) {
   Object.assign(frontMatter, newData);
 
   // join the components and write the file
-  const data = concatFrontMatterMdBody(frontMatter, mdBody);
+  const data = concatFrontMatterMdBody(frontMatter, mdBody, isIndex);
 
   return data;
 }
