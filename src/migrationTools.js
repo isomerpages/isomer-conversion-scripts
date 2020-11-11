@@ -77,7 +77,7 @@ function configYmlModifier(confObject, homepageObject, navigationObject) {
   // fields to add
   Object.assign(confObj, {
     favicon: homepageObj.favicon,
-    'google-analytics': homepageObj['google-analytics'],
+    'google_analytics': homepageObj['google-analytics'],
     remote_theme: 'isomerpages/isomerpages-template@next-gen',
     permalink: 'none',
     baseurl: '',
