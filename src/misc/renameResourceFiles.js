@@ -126,7 +126,7 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
       // split the path
       const pathArr = path.split('/');
       const resourceRoomNameIndex = pathArr.findIndex((element) => element === resourceRoomName);
-      const type = decodedContent.file_url ? 'download' : 'post';
+      const type = decodedContent.file_url ? 'file' : 'post';
 
       const dateType = typeof date;
       let computedDate;
