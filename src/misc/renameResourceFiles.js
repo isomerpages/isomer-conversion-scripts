@@ -79,7 +79,7 @@ async function getTree() {
 
 // function which slugifies the file name
 function generateResourceFileName(title, type, date) {
-  const safeTitle = slugify(title).replace(/[^a-zA-Z-]/g, '');
+  const safeTitle = slugify(title).replace(/[^a-zA-Z0-9-]/g, '');
   return `${date}-${type}-${safeTitle}.md`;
 }
 
@@ -139,7 +139,7 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
       }
 
       // get the resource category
-      const newFileName = generateResourceFileName(title, type, computedDate);
+      const newFileName = generateResourceFileName(title.toLowerCase(), type, computedDate);
       resourcePages[i].path = `${pathArr.slice(0, pathArr.length - 1).join('/')}/${newFileName}`;
     }
 
