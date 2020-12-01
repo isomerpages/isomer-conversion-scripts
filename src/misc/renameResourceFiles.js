@@ -133,7 +133,7 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
 
       // compute the date
       if (dateType === 'object') {
-        computedDate = `${date.getFullYear()}-${minTwoDigits(date.getMonth())}-${minTwoDigits(date.getDate())}`;
+        computedDate = `${date.getFullYear()}-${minTwoDigits(date.getMonth()+1)}-${minTwoDigits(date.getDate())}`;
       } else if (dateType === 'string') {
         computedDate = date;
       }
