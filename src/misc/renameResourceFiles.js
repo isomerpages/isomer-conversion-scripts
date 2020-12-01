@@ -79,7 +79,7 @@ async function getTree() {
 
 // function which slugifies the file name
 function generateResourceFileName(title, type, date) {
-  const safeTitle = slugify(title).replace(/[^a-zA-Z-]/g, '');
+  const safeTitle = slugify(title).replace(/[^a-zA-Z0-9-]/g, '');
   return `${date}-${type}-${safeTitle}.md`;
 }
 
@@ -126,20 +126,20 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
       // split the path
       const pathArr = path.split('/');
       const resourceRoomNameIndex = pathArr.findIndex((element) => element === resourceRoomName);
-      const type = pathArr[resourceRoomNameIndex + 2].slice(1);
+      const type = decodedContent.file_url ? 'file' : 'post';
 
       const dateType = typeof date;
       let computedDate;
 
       // compute the date
       if (dateType === 'object') {
-        computedDate = `${date.getFullYear()}-${minTwoDigits(date.getMonth())}-${minTwoDigits(date.getDate())}`;
+        computedDate = `${date.getFullYear()}-${minTwoDigits(date.getMonth()+1)}-${minTwoDigits(date.getDate())}`;
       } else if (dateType === 'string') {
         computedDate = date;
       }
 
       // get the resource category
-      const newFileName = generateResourceFileName(title, type, computedDate);
+      const newFileName = generateResourceFileName(title.toLowerCase(), type, computedDate);
       resourcePages[i].path = `${pathArr.slice(0, pathArr.length - 1).join('/')}/${newFileName}`;
     }
 
