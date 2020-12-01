@@ -121,25 +121,17 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
       // get attributes from github response
       const { data: { content, path } } = resourcePageData[i];
       const decodedContent = yaml.safeLoad(base64.decode(content).split('---')[1]);
-      const { date, title } = decodedContent;
+      const { title } = decodedContent;
 
       // split the path
       const pathArr = path.split('/');
-      const resourceRoomNameIndex = pathArr.findIndex((element) => element === resourceRoomName);
       const type = decodedContent.file_url ? 'file' : 'post';
 
-      const dateType = typeof date;
-      let computedDate;
-
-      // compute the date
-      if (dateType === 'object') {
-        computedDate = `${date.getFullYear()}-${minTwoDigits(date.getMonth()+1)}-${minTwoDigits(date.getDate())}`;
-      } else if (dateType === 'string') {
-        computedDate = date;
-      }
+      const fileName = pathArr[pathArr.length - 1];
+      const date = fileName.split('-').slice(0, 3).join('-'); // extract date
 
       // get the resource category
-      const newFileName = generateResourceFileName(title.toLowerCase(), type, computedDate);
+      const newFileName = generateResourceFileName(title.toLowerCase(), type, date);
       resourcePages[i].path = `${pathArr.slice(0, pathArr.length - 1).join('/')}/${newFileName}`;
     }
 
