@@ -54,15 +54,13 @@ async function getResourceRoomName() {
 async function getTree() {
   try {
     // Get the commits of the repo
-    const { data: commits } = await axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/commits`, {
-      params: {
-        ref: BRANCH_REF,
-      },
+    const { data } = await axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/branches/${BRANCH_REF}`, {
       headers,
     });
+    const commit = data.commit
     // Get the tree sha of the latest commit
-    const { commit: { tree: { sha: treeSha } } } = commits[0];
-    const currentCommitSha = commits[0].sha;
+    const { commit: { tree: { sha: treeSha } } } = commit;
+    const currentCommitSha = commit.sha;
 
     const { data: { tree: gitTree } } = await axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/trees/${treeSha}?recursive=1`, {
       params: {
