@@ -195,10 +195,10 @@ function contactUsModifier(contactUsObject, contactUsMarkdown) {
       }
 
       // if title is not present, default to HQ address
-      if (!curr.title) curr.title = 'HQ Address'
+      if (!curr.title && curr.address) curr.title = 'HQ Address'
 
       // split location address into different lines
-      curr.address = curr.address.split('<br>');
+      if (curr.address) curr.address = curr.address.split('<br>');
     });
   }
 
