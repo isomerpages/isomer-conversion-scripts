@@ -13,7 +13,7 @@ const REPO = process.argv[2];
 
 // constants
 const { GITHUB_ORG_NAME } = process.env;
-const { BRANCH_REF } = process.env;
+const { RESOURCE_RENAME_BRANCH_REF } = process.env;
 
 // credentials with generic header
 const { PERSONAL_ACCESS_TOKEN } = process.env;
@@ -31,7 +31,7 @@ async function getResourceRoomName() {
 
     const resp = await axios.get(endpoint, {
       params: {
-        ref: BRANCH_REF,
+        ref: RESOURCE_RENAME_BRANCH_REF,
       },
       headers,
     });
@@ -54,7 +54,7 @@ async function getResourceRoomName() {
 async function getTree() {
   try {
     // Get the commits of the repo
-    const { data } = await axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/branches/${BRANCH_REF}`, {
+    const { data } = await axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/branches/${RESOURCE_RENAME_BRANCH_REF}`, {
       headers,
     });
     const commit = data.commit
@@ -64,7 +64,7 @@ async function getTree() {
 
     const { data: { tree: gitTree } } = await axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/trees/${treeSha}?recursive=1`, {
       params: {
-        ref: BRANCH_REF,
+        ref: RESOURCE_RENAME_BRANCH_REF,
       },
       headers,
     });
@@ -107,7 +107,7 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     // retrieve resource page data
     const resourcePageData = await Bluebird.map(resourcePages, (page) => axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/contents/${page.path}`, {
       params: {
-        ref: BRANCH_REF,
+        ref: RESOURCE_RENAME_BRANCH_REF,
       },
       headers,
     }));
@@ -154,7 +154,7 @@ async function sendTree(gitTree, currentCommitSha) {
 
   const baseRefEndpoint = `https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/refs`;
   const baseCommitEndpoint = `https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/git/commits`;
-  const refEndpoint = `${baseRefEndpoint}/heads/${BRANCH_REF}`;
+  const refEndpoint = `${baseRefEndpoint}/heads/${RESOURCE_RENAME_BRANCH_REF}`;
 
   const newCommitResp = await axios.post(baseCommitEndpoint, {
     message: 'Rename resource page files to {date}-{category}-{title} format',
