@@ -182,7 +182,7 @@ function isPhoneNumber(inputString) {
 
   // check each element to see if it's a number
   inputString.split('').forEach((curr) => {
-    if (!Number.isNaN(curr)) {
+    if (!isNaN(curr)) {
       // increment if number
       numberCount++;
     }
