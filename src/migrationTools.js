@@ -194,6 +194,9 @@ function contactUsModifier(contactUsObject, contactUsMarkdown) {
         delete curr['operating-hours'];
       }
 
+      // if title is not present, default to HQ address
+      if (!curr.title) curr.title = 'HQ Address'
+
       // split location address into different lines
       curr.address = curr.address.split('<br>');
     });
