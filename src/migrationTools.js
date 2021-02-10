@@ -57,7 +57,6 @@ function configYmlModifier(confObject, homepageObject, navigationObject) {
 
   // fields to remove
   const toRemove = [
-    'title-abbreviated',
     'email',
     'baseurl',
     'markdown',
