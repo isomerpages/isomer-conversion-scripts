@@ -139,7 +139,11 @@ Intermediary step - get necessary files for manipulation
   const config = await utils.getFileFromGithub(header, repoToMigrate, '_config.yml');
   const homepage = await utils.getFileFromGithub(header, repoToMigrate, '_data/homepage.yml');
   const navigation = await utils.getFileFromGithub(header, repoToMigrate, '_data/navigation.yml');
-  const contactUs = await utils.getFileFromGithub(header, repoToMigrate, '_data/contact-us.yml');
+
+  // the contact-us.yml file was often misnamed as ending with .yaml instead
+  let contactUs = await utils.getFileFromGithub(header, repoToMigrate, '_data/contact-us.yml');
+  if (!contactUs.content) contactUs = await utils.getFileFromGithub(header, repoToMigrate, '_data/contact-us.yaml');
+
   const careersStories = await utils.getFileFromGithub(header, repoToMigrate, '_data/careers-stories.yml');
   const products = await utils.getFileFromGithub(header, repoToMigrate, '_data/products.yml');
   const programmes = await utils.getFileFromGithub(header, repoToMigrate, '_data/programmes.yml');
