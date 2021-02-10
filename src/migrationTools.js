@@ -237,8 +237,8 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
   if (homepageFields.programmes) {
     sections.push({
       infobar: {
-        title: homepageObj['programmes-title'],
-        subtitle: homepageObj['programmes-subtitle'],
+        title: homepageObj['programmes-subtitle'],
+        subtitle: homepageObj['programmes-title'],
         description: homepageObj['programmes-description'],
         button: homepageObj['programmes-more-button'],
         url: homepageObj['programmes-more-button-url'],
@@ -251,8 +251,8 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
     homepageObj['info-sections'].forEach((curr) => {
       sections.push({
         infopic: {
-          title: curr['section-title'],
-          subtitle: curr['section-subtitle'],
+          title: curr['section-subtitle'],
+          subtitle: curr['section-title'],
           description: curr['section-description'],
           url: curr['section-more-button-url'],
           image: curr['section-image-path'],
