@@ -9,12 +9,15 @@ trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 
 # removes Gemfile.lock
 rm Gemfile.lock
+rm Gemfile
 
 # removes github-pages gem
 sed -i "" "s/gem 'github-pages', group: :jekyll_plugins//" Gemfile
 
 # adds jekyll gem and gems for key Isomer plugins"
 {
+    echo 'source "https://rubygems.org"'
+    echo ''
     echo 'gem "jekyll", "~> 4.2"'
     echo ''
     echo 'group :jekyll_plugins do'
