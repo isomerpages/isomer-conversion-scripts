@@ -1,19 +1,18 @@
 #!/bin/bash 
 
-## Initializing ##
-
-# set script to exit if any command fails and print erred command
-set -e
+## Error-handling ##
+# https://gist.github.com/mohitmun/ecaada4ac51b386cd0e3d52dc2193e4f
+set -Eeo pipefail
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
+####################
 
 # store original working directory
 script_dir=$(pwd)
 
-##################
-
-mkdir -p ~/isomer
-cd ~/isomer
+# get latest staging changes
+mkdir -p ~/isomer-migrations
+cd ~/isomer-migrations
 if [ ! -d $1 ]; then
   echo "Cloning repo $1"
   git clone https://github.com/isomerpages/$1.git
@@ -21,7 +20,7 @@ if [ ! -d $1 ]; then
 else
   echo "Using local repo $1 and pulling latest staging changes"
   cd $1
-  git stash && git checkout staging && git pull
+  git stash && git checkout staging && git pull -q
 fi
 
 echo "Running compatibility checks"

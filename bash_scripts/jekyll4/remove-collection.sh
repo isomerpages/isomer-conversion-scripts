@@ -1,13 +1,11 @@
 #!/bin/bash 
 
-# Initializing #
-
-# set script to exit if any command fails and print erred command
-set -e
+## Error-handling ##
+# https://gist.github.com/mohitmun/ecaada4ac51b386cd0e3d52dc2193e4f
+set -Eeo pipefail
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
-
-################
+####################
 
 remove_config_blurb () {
   # brute force approach for removing collection blurb
@@ -45,7 +43,6 @@ remove_config_blurb () {
 }
 
 modify_collections () {
-
   # https://unix.stackexchange.com/questions/9496/looping-through-files-with-spaces-in-the-names
   collections=$(ls -d _*/ | grep -v "_data\|_includes\|_site")
   
@@ -101,8 +98,10 @@ modify_collection() {
   fi
   done
 
-  generate_collection_yml $1 $tmp_file
-  rm $tmp_file
+  if [ -f "$tmp_file" ]; then
+    generate_collection_yml $1 $tmp_file
+    rm $tmp_file
+  fi
 }
 
 slugify() {

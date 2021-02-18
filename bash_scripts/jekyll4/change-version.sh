@@ -1,3 +1,12 @@
+#!/bin/bash 
+
+## Error-handling ##
+# https://gist.github.com/mohitmun/ecaada4ac51b386cd0e3d52dc2193e4f
+set -Eeo pipefail
+trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
+####################
+
 # removes Gemfile.lock
 rm Gemfile.lock
 
