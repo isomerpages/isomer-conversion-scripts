@@ -16,10 +16,10 @@ cd ~/isomer/<repo-name>
 bash deploy.sh
 ```
 
-
 # Of note
-This migration script creates a folder `isomer` in your root directory and clones the Isomer repo to that directory before running the migration scripts.
-If you have an existing Isomer repo in `~/isomer`, this migration script will not handle any potential merge conflicts for you. Please ensure that your local branch is updated to the latest branch of staging to minimize migration issues.
+This migration script creates a folder `isomer-migrations` in your root directory and clones the Isomer repo to that directory before running the migration scripts.
+If you have an existing Isomer repo in `~/isomer-migrations`, this migration script will not handle any potential merge conflicts for you. Please ensure that your local branch is updated to the latest branch of staging to minimize migration issues.
+
 This migration script does not push the git migration branch to the remote repository yet. To change this, modify `migration.sh` by uncommenting line 61, `# git push origin migration` prior to running the migrations.
 
 # Repos tested on so far
@@ -28,5 +28,5 @@ This migration script does not push the git migration branch to the remote repos
 
 # To-dos
 - Improve error handling
-- Improve recovery (automatically deleting branch if error, etc)
+- Improve recovery
 - Potentially give options of where directories should be cloned to 
