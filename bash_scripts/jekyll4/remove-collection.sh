@@ -99,7 +99,7 @@ modify_collections () {
   for collection in $collections
   do
     cd "$collection"
-    modify_collection ${collection:1: ${#collection}-2}
+    modify_collection ${collection:1: ${#collection}-2} # get substring(1:-2) for _abc/
     cd ..
   done
   IFS="$OIFS"
