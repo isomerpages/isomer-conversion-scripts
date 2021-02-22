@@ -27,6 +27,5 @@ This migration script does not push the git migration branch to the remote repos
 - govtech-stp
 
 # To-dos
-- Improve error handling
-- Improve recovery
+- Improve error handling on repos with special names in title
 - Potentially give options of where directories should be cloned to 
