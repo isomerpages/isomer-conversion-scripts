@@ -7,6 +7,54 @@ trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 ####################
 
+## Parse yaml ##
+# https://github.com/jasperes/bash-yaml/blob/master/script/yaml.sh
+parse_yaml() {
+  local yaml_file=$1
+  local prefix=$2
+  local s
+  local w
+  local fs
+  s='[[:space:]]*'
+  w='[a-zA-Z0-9_.-]*'
+  fs="$(echo @|tr @ '\034')"
+  (
+    sed -e '/- [^\“]'"[^\']"'.*: /s|\([ ]*\)- \([[:space:]]*\)|\1-\'$'\n''  \1\2|g' |
+    sed -ne '/^--/s|--||g; s|\"|\\\"|g; s/[[:space:]]*$//g;' \
+      -e 's/\$/\\\$/g' \
+      -e "/#.*[\"\']/!s| #.*||g; /^#/s|#.*||g;" \
+      -e "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+      -e "s|^\($s\)\($w\)${s}[:-]$s\(.*\)$s\$|\1$fs\2$fs\3|p" |
+    awk -F"$fs" '{
+      indent = length($1)/2;
+      if (length($2) == 0) { conj[indent]="+";} else {conj[indent]="";}
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+        if (length($3) > 0) {
+          vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+          printf("%s%s%s%s=(\"%s\")\n", "'"$prefix"'",vn, $2, conj[indent-1], $3);
+        }
+      }' |
+    sed -e 's/_=/+=/g' |
+    awk 'BEGIN {
+            FS="=";
+            OFS="="
+        }
+        /(-|\.).*=/ {
+            gsub("-|\\.", "_", $1)
+        }
+        { print }'
+  ) < "$yaml_file"
+}
+
+create_config_variables() {
+  file="_config.yml"
+  prefix="config_"
+  yaml_string=$(parse_yaml "$file" "$prefix")
+  eval $yaml_string
+}
+##################
+
 remove_config_blurb () {
   # brute force approach for removing collection blurb
   # find line numbers where 'collections:' appear
@@ -44,7 +92,7 @@ remove_config_blurb () {
 
 modify_collections () {
   # https://unix.stackexchange.com/questions/9496/looping-through-files-with-spaces-in-the-names
-  collections=$(ls -d _*/ | grep -v "_data\|_includes\|_site")
+  collections=$(ls -d _*/ | grep -v "_data\|_includes\|_site\|_layouts")
   
   OIFS="$IFS"
   IFS=$'\n'
@@ -116,10 +164,20 @@ grep_attribute() {
 
 generate_collection_yml () {
   # $1 is collection name, $2 is tmp_renamed.txt
+  tmp_name="config_collections_$(echo $1 | tr '-' '_')_output"
+  
+  # output value defaults to false if not defined or false in config.yml
+  output="false"
+  for varname in $tmp_name; do 
+    if [[ ${!varname} == "true" ]]; then
+      output=${!varname}
+    fi
+  done
+
   {
     echo "collections:"
     echo "  $1:"
-    echo "    output: true"
+    echo "    output: $output"
     echo "    order:"
   } >> collection.yml
 
@@ -130,5 +188,6 @@ generate_collection_yml () {
   done < $2
 }
 
+create_config_variables
 remove_config_blurb
 modify_collections
