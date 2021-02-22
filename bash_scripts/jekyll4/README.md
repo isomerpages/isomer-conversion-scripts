@@ -23,8 +23,8 @@ If you have an existing Isomer repo in `~/isomer`, this migration script will no
 This migration script does not push the git migration branch to the remote repository yet. To change this, modify `migration.sh` by uncommenting line 61, `# git push origin migration` prior to running the migrations.
 
 # Repos tested on so far
-- mlaw
-- a-test
+- ogp
+- govtech-stp
 
 # To-dos
 - Improve error handling
