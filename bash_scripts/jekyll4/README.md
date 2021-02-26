@@ -24,10 +24,16 @@ This migration script achieves 3 key changes:
 2) Introduces new collection structure
 3) Adds deployment script to repo, necessary for supporting the new collection structure
 
+### Notes
+This migration script creates a folder `isomer-migrations` in your root directory and clones the Isomer repo to that directory before running the migration scripts.
+If you have an existing Isomer repo in `~/isomer-migrations`, this migration script will not handle any potential merge conflicts for you. Please ensure that your local branch is updated to the latest branch of staging to minimize migration issues.
+
+This migration script does not push the git migration branch to the remote repository yet. To change this, modify `migration.sh` by uncommenting line 61, `# git push origin migration` prior to running the migrations.
+
 # Background
 We have decided to migrate Isomer sites to Jekyll 4.0 to use its native reordering capabilities.
 
-## Replacing Github Pages gem
+### Replacing Github Pages gem
 As the Github Pages gem only supports up to Jekyll 3.9, we have decided to remove the Github Pages gem. To do this, we replace the Github Pages gem with the Jekyll 4.0 gem, and install specific Isomer-specific gem dependencies previously provided by Github-pages. These dependencies are:
 
 ```
@@ -40,7 +46,7 @@ group :jekyll_plugins do
   end
 ```
 
-## Updating collections structure
+### Updating collections structure
 We have decided to migrate Isomer sites to Jekyll 4.0 to use its native reordering capabilities. As part of this migration, we introduce a new collection structure, with two key changes:
 
 1) Each collection will contain a directory file: `collection.yml`, which will store the current order of files, and a boolean value for whether the collection should be included as part of the deployed site, `output: true`. This `collection.yml` follows the format of a Jekyll `_config.yml` file, and acts as an extension to the configurations provided in `<repo>/_config.yml`. A sample `collection.yml` is as follows:
@@ -65,22 +71,16 @@ _about-us/
   - contacts.md
 ```
 
-## Deployment script
+### Deployment script
 The `collection.yml` files extend the configurations provided in `<repo>/_config.yml` and have to be provided to the Jekyll build command under the `--config` option when the site is built, for example `JEKYLL_ENV=staging jekyll build --config _config.yml,_about-us/collection.yml`. We introduce a new deployment script to generate the build command automatically based on the contents of the repo at build time, `deploy.sh`.
 
 The deployment script takes the option `-e` for accepting Jekyll build environment, for example `bash deploy.sh -e staging`.
 
 
-# Of note
-This migration script creates a folder `isomer-migrations` in your root directory and clones the Isomer repo to that directory before running the migration scripts.
-If you have an existing Isomer repo in `~/isomer-migrations`, this migration script will not handle any potential merge conflicts for you. Please ensure that your local branch is updated to the latest branch of staging to minimize migration issues.
-
-This migration script does not push the git migration branch to the remote repository yet. To change this, modify `migration.sh` by uncommenting line 61, `# git push origin migration` prior to running the migrations.
-
 # Repos tested on so far
 - ogp
 - govtech-stp
+- a-test
 
 # To-dos
-- Improve error handling on repos with special names in title
 - Potentially give options of where directories should be cloned to 
