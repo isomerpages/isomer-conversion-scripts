@@ -47,7 +47,7 @@ group :jekyll_plugins do
 ```
 
 ### Updating collections structure
-We have decided to migrate Isomer sites to Jekyll 4.0 to use its native reordering capabilities. As part of this migration, we introduce a new collection structure, with two key changes:
+We introduce a new collection structure, with two key changes:
 
 1) Each collection will contain a directory file: `collection.yml`, which will store the current order of files, and a boolean value for whether the collection should be included as part of the deployed site, `output: true`. This `collection.yml` follows the format of a Jekyll `_config.yml` file, and acts as an extension to the configurations provided in `<repo>/_config.yml`. A sample `collection.yml` is as follows:
 ```
