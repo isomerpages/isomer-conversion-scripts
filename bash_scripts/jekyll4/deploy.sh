@@ -2,16 +2,7 @@
 
 # search within all collections for collection.yml file
 collections=$(find . -path ./_site -prune -false -o -name collection.yml -type f)
-
-# recursively adds collection.yml file to build command
-# https://unix.stackexchange.com/questions/9496/looping-through-files-with-spaces-in-the-names
-OIFS="$IFS"
-IFS=$'\n'
-for collection in $collections
-do
- var="${var},${collection}"
-done
-IFS="$OIFS"
+var=$(echo $collections | sed 's/ .\//,.\//g')
 
 env='development'
 while getopts "e:" opt; do
@@ -23,7 +14,7 @@ while getopts "e:" opt; do
 done
 
 # netlify build
-JEKYLL_ENV=$env jekyll build --config _config.yml"$var"
+JEKYLL_ENV=$env jekyll build --config _config.yml",$var"
 
 # uncomment for local build
-# bundle exec jekyll serve --config _config.yml"$var"
+# bundle exec jekyll serve --config _config.yml",$var"
