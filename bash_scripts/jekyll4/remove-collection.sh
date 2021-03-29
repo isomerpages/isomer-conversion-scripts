@@ -137,6 +137,9 @@ modify_collection() {
         # if directory does not exist
         if [ ! -d "$cleaned_third_nav" ]; then
           mkdir "$cleaned_third_nav"
+          # create placeholder file and add to collection.yml
+          touch "$cleaned_third_nav/.keep"
+          echo "$cleaned_third_nav/.keep" >> $tmp_file
         fi
         # rename and move file
         mv "$file" "$cleaned_third_nav/$cleaned_title.md"
