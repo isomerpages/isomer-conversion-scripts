@@ -49,9 +49,10 @@ echo "Compatible: v2 repo, no nested collections"
 echo "Creating migration branch"
 git checkout -b migration
 
-echo "Upgrading Jekyll to 4.0, changing gem dependencies"
+echo "Changing gem to isomer-jekyll"
 bash $script_dir/change-version.sh
-git add Gemfile Gemfile.lock .gitignore -f
+git add Gemfile .gitignore -f
+git rm netlify.toml .ruby-version Gemfile.lock -f
 git commit -m "migrate: upgrading Jekyll to 4.0, changing gem dependencies"
 
 echo "Modifying collection structure"

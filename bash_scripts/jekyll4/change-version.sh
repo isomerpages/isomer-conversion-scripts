@@ -7,27 +7,21 @@ trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 ####################
 
-# removes Gemfile.lock
+# removes Gemfile, Gemfile.lock, netlify.toml, .ruby-version
 rm -f Gemfile.lock
 rm -f Gemfile
+rm -f netlify.toml
+rm -f .ruby-version
 
 # adds jekyll gem and gems for key Isomer plugins"
 {
     echo 'source "https://rubygems.org"'
     echo ''
-    echo 'gem "jekyll", "~> 4.2"'
-    echo ''
-    echo 'group :jekyll_plugins do'
-    echo '    gem "jekyll-feed", "0.15.1"'
-    echo '    gem "jekyll-sitemap", "1.4.0"'
-    echo '    gem "jekyll-assets", "1.0.0"'  
-    echo '    gem "jekyll-paginate", "1.1.0"'
-    echo '    gem "jekyll-remote-theme", "0.4.2"'
-    echo '  end'
+    echo 'gem "isomer-jekyll", group: :jekyll_plugins'
 } >> Gemfile
 
-# create new Gemfile lock
-bundle install
+# create empty netlify.toml
+echo -n "" > netlify.toml
 
 # adds to .jekyll-cache to .gitignore file as Jekyll 4.0 creates template cache folder .jekyll-cache
 {
