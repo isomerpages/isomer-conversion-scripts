@@ -59,11 +59,6 @@ bash $script_dir/remove-collection.sh
 git add .
 git commit -m "migrate: modifying collections structure"
 
-echo "Adding deployment script"
-cp $script_dir/deploy.sh .
-git add deploy.sh
-git commit -m "migrate: add deployment script"
-
 # echo "Pushing to remote"
 # git push origin migration
 
