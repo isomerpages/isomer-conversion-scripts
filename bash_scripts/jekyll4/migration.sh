@@ -51,8 +51,8 @@ git checkout -b migration
 
 echo "Changing gem to isomer-jekyll"
 bash $script_dir/update-gem.sh
-git add Gemfile .gitignore -f
-git rm netlify.toml .ruby-version Gemfile.lock -f
+git add Gemfile .gitignore netlify.toml -f
+git rm .ruby-version Gemfile.lock -f
 git commit -m "migrate: upgrading Jekyll to 4.0, changing gem dependencies"
 
 echo "Modifying collection structure"
