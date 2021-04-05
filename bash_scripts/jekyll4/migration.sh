@@ -50,13 +50,13 @@ echo "Creating migration branch"
 git checkout -b migration
 
 echo "Changing gem to isomer-jekyll"
-bash $script_dir/change-version.sh
+bash $script_dir/update-gem.sh
 git add Gemfile .gitignore -f
 git rm netlify.toml .ruby-version Gemfile.lock -f
 git commit -m "migrate: upgrading Jekyll to 4.0, changing gem dependencies"
 
 echo "Modifying collection structure"
-bash $script_dir/remove-collection.sh
+bash $script_dir/generate-collections-structure.sh
 git add .
 git commit -m "migrate: modifying collections structure"
 
