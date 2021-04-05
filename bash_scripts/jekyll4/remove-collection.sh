@@ -55,7 +55,7 @@ create_config_variables() {
 }
 ##################
 
-remove_config_blurb () {
+remove_config_collection_blurb () {
   # brute force approach for removing collection blurb
   # find line numbers where 'collections:' appear
   # starting on the following line after "collections:"
@@ -192,5 +192,5 @@ generate_collection_yml () {
 }
 
 create_config_variables
-remove_config_blurb
+remove_config_collection_blurb
 modify_collections
