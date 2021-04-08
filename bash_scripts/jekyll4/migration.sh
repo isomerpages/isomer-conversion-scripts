@@ -93,6 +93,31 @@ bash $script_dir/generate-collections-structure.sh
 git add .
 git commit -m "migrate: modifying collections structure"
 
+echo "Adding placeholder files to nested image and file directories"
+if [ -d "images" ]; then
+  cd images
+  img_dirs=$(find . -type d)
+  for dir in $img_dirs
+  do
+    if [[ $dir != "." ]]; then
+      touch "$dir/.keep"
+    fi
+  done
+  cd ..
+fi
+
+if [ -d "files" ]; then
+  cd files
+  file_dirs=$(find . -type d)
+  for dir in $file_dirs
+  do
+    if [[ $dir != "." ]]; then
+      touch "$dir/.keep"
+    fi
+  done
+  cd ..
+fi
+
 # echo "Pushing to remote"
 # git push origin migration
 
