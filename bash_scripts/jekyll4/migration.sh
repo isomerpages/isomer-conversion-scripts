@@ -82,7 +82,7 @@ if [ $(find . -name "*.md" -maxdepth 1 | grep -v "index.md\|README.md" | wc -l) 
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Aborting migration" && exit 1 
-  fi1
+  fi
 fi
 echo "Compatible: v2 repo"
 
