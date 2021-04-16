@@ -55,7 +55,7 @@ create_config_variables() {
 }
 ##################
 
-remove_config_blurb () {
+remove_config_collection_blurb () {
   # brute force approach for removing collection blurb
   # find line numbers where 'collections:' appear
   # starting on the following line after "collections:"
@@ -146,12 +146,16 @@ modify_collection() {
         # update in tmp file
         echo "$cleaned_third_nav/$cleaned_title.md" >> $tmp_file     
       fi
+    else 
+      echo "$file has no frontmatter. Continuing migration."
   fi
   done
 
   if [ -f "$tmp_file" ]; then
     generate_collection_yml $1 $tmp_file
     rm $tmp_file
+  else 
+    echo "Collection $1 has 0 files with frontmatter. Aborting migration." && exit 1 
   fi
 }
 
@@ -162,7 +166,7 @@ slugify() {
 
 grep_attribute() {
   # $1 is search term, $2 is search file
-  echo $(grep -w $1 $2 | sed 's/^.*: //')
+  echo $(grep -w -m 1 $1 $2 | sed 's/^.*: //')
 }
 
 generate_collection_yml () {
@@ -192,5 +196,5 @@ generate_collection_yml () {
 }
 
 create_config_variables
-remove_config_blurb
+remove_config_collection_blurb
 modify_collections
