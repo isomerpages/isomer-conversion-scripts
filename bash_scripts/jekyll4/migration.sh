@@ -44,7 +44,6 @@ if [ $(find . -path "./_*" -mindepth 2 -maxdepth 2 -type d | grep -v "_data/*\|_
         echo "Aborting migration" && exit 1 
     fi
 fi
-echo "Compatible: v2 repo, no nested collections"
 # check for jq installation
 if ! brew ls --versions jq; then
   # jq not installed
@@ -71,13 +70,21 @@ if [[ ! -z "$description" ]]; then
     fi
   done
 else
-  read -p "Unable to find staging and prod websites, proceed with renaming? If no, migration will be aborted. (y/n)" -n 1 -r
+  read -p "Unable to find staging and prod websites, proceed? If no, migration will be aborted. (y/n)" -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Aborting migration" && exit 1 
     fi
 fi
-echo "Compatible: v2 repo, no nested collections"
+# check for markdown pages outside of /pages
+if [ $(find . -name "*.md" -maxdepth 1 | grep -v "index.md\|README.md" | wc -l) -ne 0 ]; then
+  read -p "Repo has .md pages outside of /pages, proceed with migration? If no, migration will be aborted. (y/n)" -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Aborting migration" && exit 1 
+  fi
+fi
+echo "Compatible: v2 repo"
 
 echo "Creating migration branch"
 git checkout -b migration
