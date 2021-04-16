@@ -45,6 +45,39 @@ if [ $(find . -path "./_*" -mindepth 2 -maxdepth 2 -type d | grep -v "_data/*\|_
     fi
 fi
 echo "Compatible: v2 repo, no nested collections"
+# check for jq installation
+if ! brew ls --versions jq; then
+  # jq not installed
+  echo "Installing jq"
+  echo brew install jq
+fi
+# check for staging and prod website in repo description
+description=$(curl -X GET -u $PERSONAL_ACCESS_TOKEN:x-oauth-basic https://api.github.com/repos/isomerpages/$1 | jq '. |  .description')
+echo "$description"
+if [[ ! -z "$description" ]]; then
+  IFS='; ' read -r -a array <<< "$description"
+  for element in "${array[@]}"
+  do
+    if [[ $element == *"https"* && $element == *"staging"* ]]; then
+      echo "Found staging url"
+      {
+        echo "staging: $element"
+      } >> _config.yml
+    elif [[ $element == *"https"* && $element == *"prod"* ]]; then
+      echo "Found prod url"
+      {
+        echo "prod: $element"
+      } >> _config.yml
+    fi
+  done
+else
+  read -p "Unable to find staging and prod websites, proceed with renaming? If no, migration will be aborted. (y/n)" -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborting migration" && exit 1 
+    fi
+fi
+echo "Compatible: v2 repo, no nested collections"
 
 echo "Creating migration branch"
 git checkout -b migration
@@ -59,6 +92,31 @@ echo "Modifying collection structure"
 bash $script_dir/generate-collections-structure.sh
 git add .
 git commit -m "migrate: modifying collections structure"
+
+echo "Adding placeholder files to nested image and file directories"
+if [ -d "images" ]; then
+  cd images
+  img_dirs=$(find . -type d)
+  for dir in $img_dirs
+  do
+    if [[ $dir != "." ]]; then
+      touch "$dir/.keep"
+    fi
+  done
+  cd ..
+fi
+
+if [ -d "files" ]; then
+  cd files
+  file_dirs=$(find . -type d)
+  for dir in $file_dirs
+  do
+    if [[ $dir != "." ]]; then
+      touch "$dir/.keep"
+    fi
+  done
+  cd ..
+fi
 
 # echo "Pushing to remote"
 # git push origin migration

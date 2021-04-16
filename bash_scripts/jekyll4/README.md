@@ -1,9 +1,12 @@
 # Usage
 
+Ensure that you have brew installed before running the migration: this migration will also install [jq](https://stedolan.github.io/jq/)
+
 To run migration:
 ```
 git clone https://github.com/isomerpages/isomer-conversion-scripts.git
 cd isomer-conversion-scripts/bash_scripts/jekyll4
+source ../../.env
 bash migration.sh <repo-name>
 ```
 
@@ -58,7 +61,7 @@ collections:
       - mission/statement.md
       - contacts.md
 ```
-2) Placeholder files `.keep` are added to the Isomer collection subfolders to allow empty subfolders to be maintained on Isomer sites. Placeholder files are also added to the `collection.yml` file.
+2) Placeholder files `.keep` are added to the Isomer collection subfolders, as well as nested images and files, to allow empty subfolders to be maintained on Isomer sites. Placeholder files are also added to the `collection.yml` file.
 ```
 collections:
   about-us:
