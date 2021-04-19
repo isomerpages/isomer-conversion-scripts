@@ -51,8 +51,7 @@ if ! brew ls --versions jq; then
   echo brew install jq
 fi
 # check for staging and prod website in repo description
-description=$(curl -X GET -u $PERSONAL_ACCESS_TOKEN:x-oauth-basic https://api.github.com/repos/isomerpages/$1 | jq '. |  .description')
-echo "$description"
+description=$(curl -X GET -u $PERSONAL_ACCESS_TOKEN:x-oauth-basic https://api.github.com/repos/isomerpages/$1 | jq -r '. |  .description')
 if [[ ! -z "$description" ]]; then
   IFS='; ' read -r -a array <<< "$description"
   for element in "${array[@]}"
