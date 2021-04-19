@@ -92,17 +92,23 @@ remove_config_collection_blurb () {
 
 modify_collections () {
   # https://unix.stackexchange.com/questions/9496/looping-through-files-with-spaces-in-the-names
-  collections=$(ls -d _*/ | grep -v "_data\|_includes\|_site\|_layouts")
+  if [ -z "$(ls -d _*/ | grep -v "_data\|_includes\|_site\|_layouts")" ]; then
+   echo "No collections"
+  else
+    collections=$(ls -d _*/ | grep -v "_data\|_includes\|_site\|_layouts")
   
-  OIFS="$IFS"
-  IFS=$'\n'
-  for collection in $collections
-  do
-    cd "$collection"
-    modify_collection ${collection:1: ${#collection}-2} # get substring(1:-2) for _abc/
-    cd ..
-  done
-  IFS="$OIFS"
+    OIFS="$IFS"
+    IFS=$'\n'
+    for collection in $collections
+    do
+      cd "$collection"
+      modify_collection ${collection:1: ${#collection}-2} # get substring(1:-2) for _abc/
+      cd ..
+    done
+    IFS="$OIFS"
+  fi
+
+  
 }
 
 modify_collection() {
