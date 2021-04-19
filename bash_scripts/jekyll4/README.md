@@ -21,10 +21,13 @@ bash deploy.sh
 
 # Details
 
-This migration script achieves 2 key changes:
+This migration script achieves 4 key changes:
 
-1) Upgrades Gemfile to Isomer Jekyll Gem, removes Github Pages gem and unused files, specifies Isomer-specific gem plugins [gem](https://github.com/opengovsg/isomer-jekyll) [details for gem rationale](https://docs.google.com/document/d/1ZVSgFhNClGL0K9Q8udePnwftPJ1Qex61Y0QG8QOXM9A/edit#)
-2) Introduces new collections structure along with placeholder files [details on collections structure](https://docs.google.com/document/d/1cEwlLZHuq-xLpL2nDB9q3QmivAkgmvhPRFMbGo-sGg8/edit#) [details on placeholder files](https://docs.google.com/document/d/1EccpS_ATrfOe4DmU4ChXtU9kV6Jl1rFOdKqBLyG6ym8/edit#heading=h.gg92ziy86rq7)
+1) Upgrades Gemfile to Isomer Jekyll Gem, removes Github Pages gem and unused files, specifies Isomer-specific gem plugins in `_config.yml` [gem](https://github.com/opengovsg/isomer-jekyll) [details for gem rationale](https://docs.google.com/document/d/1ZVSgFhNClGL0K9Q8udePnwftPJ1Qex61Y0QG8QOXM9A/edit#)
+2) Introduces new collections structure along with placeholder files .keep to subfolders [details on collections structure](https://docs.google.com/document/d/1cEwlLZHuq-xLpL2nDB9q3QmivAkgmvhPRFMbGo-sGg8/edit#) [details on placeholder files](https://docs.google.com/document/d/1EccpS_ATrfOe4DmU4ChXtU9kV6Jl1rFOdKqBLyG6ym8/edit#heading=h.gg92ziy86rq7)
+3) Centralizes build.sh and netlify.toml files, retrieved at build time from [isomer-build](https://github.com/opengovsg/isomer-build)
+4) Adds staging and prod Netlify urls to `_config.yml`
+
 
 ### Notes
 This migration script creates a folder `isomer-migrations` in your root directory and clones the Isomer repo to that directory before running the migration scripts.
@@ -47,7 +50,7 @@ plugins:
 
 By creating an Isomer-specific gem, we will be able to version control without having to redeploy sites each time the gem dependencies for Isomer repos updates.
 
-### Updating collections structure
+### Updating collections structure and introduces `.keep` files to subfolders
 We introduce a new collection structure, with three key changes:
 
 1) Each collection will contain a directory file: `collection.yml`, which will store the current order of files, and a boolean value for whether the collection should be included as part of the deployed site, `output: true`. This `collection.yml` follows the format of a Jekyll `_config.yml` file, and acts as an extension to the configurations provided in `<repo>/_config.yml`. A sample `collection.yml` is as follows:
@@ -83,3 +86,9 @@ _about-us/
   - contacts.md
 ```
 
+### Centralizing `build.sh` and `netlify.toml` files
+
+We have decided to centralise our `build.sh` and `netlify.toml` files, and host it here ([isomer-build](https://github.com/opengovsg/isomer-build)) to be retrieved at build time. This will prevent any unintentional or malicious script and CSP injections from our users. More information on our rationale for maintaining centralised `build.sh` and `netlify.toml` files can be found [here](https://docs.google.com/document/d/1ZVSgFhNClGL0K9Q8udePnwftPJ1Qex61Y0QG8QOXM9A/edit#)
+
+### Adds staging and prod Netlify urls to `_config.yml`
+This change is made so that the CMS will be able to retrieve the staging and prod urls for a url. 
