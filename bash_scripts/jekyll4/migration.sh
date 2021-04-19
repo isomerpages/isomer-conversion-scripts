@@ -97,7 +97,6 @@ git commit -m "migrate: upgrading Jekyll to 4.0, changing gem dependencies"
 echo "Modifying collection structure"
 bash $script_dir/generate-collections-structure.sh
 git add .
-git commit -m "migrate: modifying collections structure"
 
 echo "Adding placeholder files to nested image and file directories"
 if [ -d "images" ]; then
@@ -107,6 +106,7 @@ if [ -d "images" ]; then
   do
     if [[ $dir != "." ]]; then
       touch "$dir/.keep"
+      git add .
     fi
   done
   cd ..
@@ -119,11 +119,13 @@ if [ -d "files" ]; then
   do
     if [[ $dir != "." ]]; then
       touch "$dir/.keep"
+      git add .
     fi
   done
   cd ..
 fi
 
+git commit -m "migrate: modifying collections, image, and file structure"
 # echo "Pushing to remote"
 # git push origin migration
 
