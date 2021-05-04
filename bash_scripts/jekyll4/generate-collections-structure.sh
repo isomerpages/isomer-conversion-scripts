@@ -49,6 +49,12 @@ parse_yaml() {
 
 create_config_variables() {
   file="_config.yml"
+  read -p "Config file: replace 4 space with 2 space? (y/n)" -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "replacing 4 space with 2 space"
+    sed  -i '' 'h;s/[^ ].*//;s/    /  /g;G;s/\n *//' "$file"
+  fi
   prefix="config_"
   yaml_string=$(parse_yaml "$file" "$prefix")
   eval $yaml_string
