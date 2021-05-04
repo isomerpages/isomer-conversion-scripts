@@ -64,30 +64,34 @@ remove_config_collection_blurb () {
   #     else, line is a new key; note down the current line number
   file='_config.yml'
 
-  line_nums=$(grep -n 'collections:' $file | cut -d : -f 1)
-  LAST_LINE_NUM=$(wc -l < $file | bc)
-  var=""
+  if [ -z "$(grep -n 'collections:' $file | cut -d : -f 1)" ]; then
+   echo "No collections"
+  else
+    line_nums=$(grep -n 'collections:' $file | cut -d : -f 1)
+    LAST_LINE_NUM=$(wc -l < $file | bc)
+    var=""
 
-  for line_num in $line_nums
-  do
-    var="${var}${line_num}"
-    COUNT=${line_num}
-    while IFS= read -r line || [ -n "$line" ]; do
-      if [[ $line != $' '* ]]; then
-        var="${var},${COUNT} d;"
-        break
+    for line_num in $line_nums
+    do
+      var="${var}${line_num}"
+      COUNT=${line_num}
+      while IFS= read -r line || [ -n "$line" ]; do
+        if [[ $line != $' '* ]]; then
+          var="${var},${COUNT} d;"
+          break
+        fi
+        COUNT=$(( $COUNT + 1 ))
+      done < <(tail -n "+$(( $line_num + 1 ))" $file)
+      
+      # if last line of file is an attribute on "collections:",
+      # we specify line number manually
+      if [[ $var != *';' ]]; then
+        var="${var},${LAST_LINE_NUM} d;"
       fi
-      COUNT=$(( $COUNT + 1 ))
-    done < <(tail -n "+$(( $line_num + 1 ))" $file)
-    
-    # if last line of file is an attribute on "collections:",
-    # we specify line number manually
-    if [[ $var != *';' ]]; then
-      var="${var},${LAST_LINE_NUM} d;"
-    fi
-  done
+    done
 
-  sed -i "" "${var}" $file
+    sed -i "" "${var}" $file
+  fi
 }
 
 modify_collections () {
