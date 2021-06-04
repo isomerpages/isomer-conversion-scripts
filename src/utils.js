@@ -150,7 +150,6 @@ function frontMatterInsert(markdownFileContent, newData, isIndex) {
   if (frontMatter.layout === 'leftnav-page'
     || frontMatter.layout === 'leftnav-page-content'
     || frontMatter.layout === 'simple-page'
-    || frontMatter.layout === 'post'
   ) {
     delete frontMatter.layout;
   }
