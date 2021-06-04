@@ -187,6 +187,7 @@ async function renameResourceFiles() {
     await sendTree(newGitTree, currentCommitSha);
   } catch (err) {
     console.log(err);
+    console.log(err.status)
   }
 }
 
