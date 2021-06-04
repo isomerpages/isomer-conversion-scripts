@@ -203,9 +203,7 @@ function isEmail(email) {
 // an email
 // others
 function contactUsLineChecker(line) {
-  if (!line) return {
-    other: line,
-  };
+  if (!line) return
   if (isPhoneNumber(line)) {
     return {
       phone: line,
