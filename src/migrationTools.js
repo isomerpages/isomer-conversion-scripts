@@ -177,7 +177,7 @@ function contactUsModifier(contactUsObject, contactUsMarkdown) {
     contactUsObj.contacts.forEach((curr) => {
       if (curr.content) {
         // replace individual elements in content
-        curr.content = curr.content.map((ele) => utils.contactUsLineChecker(ele.line));
+        curr.content = curr.content.map((ele) => utils.contactUsLineChecker(ele.line)).filter(x => !!x);
       }
     });
 

@@ -150,7 +150,6 @@ function frontMatterInsert(markdownFileContent, newData, isIndex) {
   if (frontMatter.layout === 'leftnav-page'
     || frontMatter.layout === 'leftnav-page-content'
     || frontMatter.layout === 'simple-page'
-    || frontMatter.layout === 'post'
   ) {
     delete frontMatter.layout;
   }
@@ -204,6 +203,7 @@ function isEmail(email) {
 // an email
 // others
 function contactUsLineChecker(line) {
+  if (!line) return
   if (isPhoneNumber(line)) {
     return {
       phone: line,
