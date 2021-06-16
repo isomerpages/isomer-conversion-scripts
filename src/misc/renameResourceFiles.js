@@ -118,9 +118,24 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     for (let i = 0; i < resourcePageData.length; i++) {
       // get attributes from github response
       const { data: { content, path } } = resourcePageData[i];
-      const decodedContent = yaml.safeLoad(base64.decode(content).split('---')[1]);
+      let decodedContent
+      try {
+        // console.log(base64.decode(content))
+        decodedContent = yaml.safeLoad(base64.decode(content).split('---')[1]);
+      } catch {
+        const frontMatter = base64.decode(content).split('---')[1]
+        let titleLine = frontMatter.match(/title:.*/)[0]
+        if (!titleLine.includes('\'')) {
+          titleLine = titleLine.replace(/title:\s*/, "title: \'")
+          titleLine = `${titleLine}\'`
+        } else if (!titleLine.includes('\"')) {
+          titleLine = titleLine.replace(/title:\s*/, "title: \"")
+          titleLine = `${titleLine}\"`
+        }
+        const temp = frontMatter.replace(/title:.*/, titleLine)
+        decodedContent = yaml.safeLoad(frontMatter.replace(/title:.*/, titleLine));
+      }
       const { title } = decodedContent;
-
       // split the path
       const pathArr = path.split('/');
       const type = decodedContent.file_url ? 'file' : 'post';
