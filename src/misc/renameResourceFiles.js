@@ -47,6 +47,7 @@ async function getResourceRoomName() {
     throw new Error('Resource room does not exist');
   } catch (err) {
     console.log(err);
+    throw err
   }
 }
 
@@ -72,6 +73,7 @@ async function getTree() {
     return { gitTree, currentCommitSha };
   } catch (err) {
     console.log(err);
+    throw err
   }
 }
 
@@ -105,12 +107,13 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     });
 
     // retrieve resource page data
-    const resourcePageData = await Bluebird.map(resourcePages, (page) => axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/contents/${page.path}`, {
+    const resourcePageData = await Bluebird.map(resourcePages, (page) => {
+      return axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/contents/${encodeURIComponent(page.path)}`, {
       params: {
         ref: RESOURCE_RENAME_BRANCH_REF,
       },
       headers,
-    }));
+    })});
 
     /*
     * Renames all resource files in the correct {date}-{category}-{title} format
@@ -154,6 +157,7 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     // we can split on forward slash
   } catch (err) {
     console.log(err);
+    throw err
   }
 }
 
@@ -202,6 +206,7 @@ async function renameResourceFiles() {
     await sendTree(newGitTree, currentCommitSha);
   } catch (err) {
     console.log(err);
+    throw err
   }
 }
 
