@@ -100,12 +100,13 @@ git add .
 
 echo "Adding placeholder files to nested image and file directories"
 if [ -d "images" ]; then
+  IFS=$'\n'
   cd images
   img_dirs=$(find . -type d)
   for dir in $img_dirs
   do
     if [[ $dir != "." ]]; then
-      touch "$dir/.keep"
+      touch "$dir"/.keep
       git add .
     fi
   done
@@ -113,12 +114,13 @@ if [ -d "images" ]; then
 fi
 
 if [ -d "files" ]; then
+  IFS=$'\n'
   cd files
   file_dirs=$(find . -type d)
   for dir in $file_dirs
   do
     if [[ $dir != "." ]]; then
-      touch "$dir/.keep"
+      touch "$dir"/.keep
       git add .
     fi
   done
@@ -126,7 +128,7 @@ if [ -d "files" ]; then
 fi
 
 git commit -m "migrate: modifying collections, image, and file structure"
-# echo "Pushing to remote"
-# git push origin migration
+echo "Pushing to remote"
+git push origin migration
 
 echo "Migration successful"
