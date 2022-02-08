@@ -47,7 +47,7 @@ async function getResourceRoomName() {
     throw new Error('Resource room does not exist');
   } catch (err) {
     console.log(err);
-    throw err
+    throw err;
   }
 }
 
@@ -58,7 +58,7 @@ async function getTree() {
     const { data } = await axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/branches/${RESOURCE_RENAME_BRANCH_REF}`, {
       headers,
     });
-    const commit = data.commit
+    const { commit } = data;
     // Get the tree sha of the latest commit
     const { commit: { tree: { sha: treeSha } } } = commit;
     const currentCommitSha = commit.sha;
@@ -73,13 +73,14 @@ async function getTree() {
     return { gitTree, currentCommitSha };
   } catch (err) {
     console.log(err);
-    throw err
+    throw err;
   }
 }
 
 // function which slugifies the file name
-function generateResourceFileName(title, type, date) {
+function generateResourceFileName(title, type, date, fileName) {
   const safeTitle = slugify(title).replace(/[^a-zA-Z0-9-]/g, '');
+  if (title.length >= 100) console.log(fileName);
   return `${date}-${type}-${safeTitle}.md`;
 }
 
@@ -107,13 +108,12 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     });
 
     // retrieve resource page data
-    const resourcePageData = await Bluebird.map(resourcePages, (page) => {
-      return axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/contents/${encodeURIComponent(page.path)}`, {
+    const resourcePageData = await Bluebird.map(resourcePages, (page) => axios.get(`https://api.github.com/repos/${GITHUB_ORG_NAME}/${REPO}/contents/${encodeURIComponent(page.path)}`, {
       params: {
         ref: RESOURCE_RENAME_BRANCH_REF,
       },
       headers,
-    })});
+    }));
 
     /*
     * Renames all resource files in the correct {date}-{category}-{title} format
@@ -121,22 +121,29 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     for (let i = 0; i < resourcePageData.length; i++) {
       // get attributes from github response
       const { data: { content, path } } = resourcePageData[i];
-      let decodedContent
+      let decodedContent;
       try {
         // console.log(base64.decode(content))
         decodedContent = yaml.safeLoad(base64.decode(content).split('---')[1]);
-      } catch {
-        const frontMatter = base64.decode(content).split('---')[1]
-        let titleLine = frontMatter.match(/title:.*/)[0]
+      } catch (e) {
+        const frontMatter = base64.decode(content).split('---')[1];
+        let titleLine = frontMatter.match(/title:.*/)[0];
         if (!titleLine.includes('\'')) {
-          titleLine = titleLine.replace(/title:\s*/, "title: \'")
-          titleLine = `${titleLine}\'`
+          titleLine = titleLine.replace(/title:\s*/, "title: \'");
+          titleLine = `${titleLine}\'`;
         } else if (!titleLine.includes('\"')) {
-          titleLine = titleLine.replace(/title:\s*/, "title: \"")
-          titleLine = `${titleLine}\"`
+          titleLine = titleLine.replace(/title:\s*/, 'title: "');
+          titleLine = `${titleLine}\"`;
         }
-        const temp = frontMatter.replace(/title:.*/, titleLine)
-        decodedContent = yaml.safeLoad(frontMatter.replace(/title:.*/, titleLine));
+        try {
+          decodedContent = yaml.safeLoad(frontMatter.replace(/title:.*/, titleLine));
+        } catch (err) {
+          const pathArr = path.split('/');
+          const fileName = pathArr[pathArr.length - 1];
+          console.log('ERROR IN FRONT MATTER');
+          console.log(fileName);
+          continue;
+        }
       }
       const { title } = decodedContent;
       // split the path
@@ -147,7 +154,7 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
       const date = fileName.split('-').slice(0, 3).join('-'); // extract date
 
       // get the resource category
-      const newFileName = generateResourceFileName(title.toLowerCase(), type, date);
+      const newFileName = generateResourceFileName(title.toLowerCase(), type, date, fileName);
       resourcePages[i].path = `${pathArr.slice(0, pathArr.length - 1).join('/')}/${newFileName}`;
     }
 
@@ -157,7 +164,7 @@ async function modifyTreeResourcePages(gitTree, resourceRoomName) {
     // we can split on forward slash
   } catch (err) {
     console.log(err);
-    throw err
+    throw err;
   }
 }
 
@@ -206,7 +213,7 @@ async function renameResourceFiles() {
     await sendTree(newGitTree, currentCommitSha);
   } catch (err) {
     console.log(err);
-    throw err
+    throw err;
   }
 }
 
