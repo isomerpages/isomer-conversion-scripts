@@ -135,6 +135,11 @@ modify_collection() {
   for file in $files
   do
     raw_third_nav=$(grep_attribute "third_nav_title:" $file)
+    # Remove quotes
+    raw_third_nav="${raw_third_nav%\'}"
+    raw_third_nav="${raw_third_nav#\'}"
+    raw_third_nav="${raw_third_nav%\"}"
+    raw_third_nav="${raw_third_nav#\"}"
     raw_title=$(grep_attribute "title:" $file)
     cleaned_title=$(slugify "$raw_title")
 
@@ -149,7 +154,8 @@ modify_collection() {
       
       else 
       # if third level  
-        cleaned_third_nav=$(slugify "$raw_third_nav")
+        cleaned_third_nav="$raw_third_nav"
+        echo "third nav: =============== $cleaned_third_nav ==============="
         # if directory does not exist
         if [ ! -d "$cleaned_third_nav" ]; then
           mkdir "$cleaned_third_nav"
