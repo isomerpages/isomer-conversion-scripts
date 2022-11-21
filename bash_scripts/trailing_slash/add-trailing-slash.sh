@@ -18,9 +18,7 @@ trap clean_up EXIT
 modify_permalink () {
   OIFS="$IFS"
   IFS=$'\n'
-  echo "1"
   md_files=$(find . -type f -name "*.md" -print0 | xargs -0 grep -il "permalink:.*[^/]$")
-  echo "2"
   for file in $md_files
   do
     sed -i '' '/^permalink:/ s/$/\//' $file
