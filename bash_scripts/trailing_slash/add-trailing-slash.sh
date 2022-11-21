@@ -52,6 +52,6 @@ modify_permalink
 git add .
 git commit -m "migrate: adding trailing slash to permalinks"
 echo "Pushing to remote"
-git push origin third-nav-fix
+git push -u origin add-trailing-slash
 
 echo "Migration successful"
