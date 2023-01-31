@@ -19,13 +19,19 @@ modify_permalink () {
   OIFS="$IFS"
   IFS=$'\n'
   md_files=$(find . -type f -name "*.md" -print0 | xargs -0 grep -il "permalink:.*[^/]$")
-  for file in $md_files
-  do
-    sed -i '' '/^permalink:/ s/$/\//' $file
-  done
+  modified_files=""
+  if [ -z "$md_files" ]; then
+    echo "No matching files found." 1>&2
+  else
+    for file in $md_files
+    do
+      sed -i '' '/^permalink:/ s/$/\//' $file
+      modified_files="$modified_files $file"
+    done
+  fi
   IFS="$OIFS"
+  echo "$modified_files"
 }
-
 # store original working directory
 script_dir=$(pwd)
 
@@ -45,11 +51,20 @@ fi
 echo "Creating add-trailing-slash branch"
 git checkout -b add-trailing-slash
 
-modify_permalink
+modified_files=$(modify_permalink)
 
-git add .
-git commit -m "migrate: adding trailing slash to permalinks"
-echo "Pushing to remote"
-git push -u origin add-trailing-slash
+
+if [ -z "$modified_files" ]; then
+  echo "No files were modified."
+else
+  echo "Staging modified files: $modified_files"
+  # DO NOT use `git add .` as there might be files that we where changed in capilisation
+  # and files in mac are case sensitive. 
+  git add $modified_files
+  git commit -m "migrate: adding trailing slash to permalinks"
+  echo "Pushing to remote"
+  git push -u origin add-trailing-slash
+fi
+
 
 echo "Migration successful"
