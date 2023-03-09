@@ -54,7 +54,7 @@ const getSiteAndContributors = async (site, dbClient) => {
       siteMemberValues.push(`(${userId}, ${repoId}, '${userType}')`);
     });
     const insertQuery = `INSERT INTO "site_members" (user_id, site_id, role) VALUES\n${siteMemberValues.join(',\n')};`;
-    // await dbClient.query(insertQuery);
+    await dbClient.query(insertQuery);
     console.log(insertQuery);
     try {
       const dirPath = `./${site}`;
