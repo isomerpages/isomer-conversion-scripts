@@ -60,12 +60,12 @@ async function migrateRepo(repoName: string, name: string) {
 
 async function modifyRepo({ repoName, appId, repoPath }: AmplifyAppInfo) {
   if (fs.existsSync(repoPath)) {
-    console.log(
+    console.info(
       `Repository ${repoName} already exists. Pulling changes from origin.`
     );
     await simpleGit(repoPath).pull("origin", "staging");
   } else {
-    console.log(`Cloning ${repoName} repository from ${ORGANIZATION_NAME}...`);
+    console.info(`Cloning ${repoName} repository from ${ORGANIZATION_NAME}...`);
     await simpleGit().clone(
       `https://github.com/${ORGANIZATION_NAME}/${repoName}.git`,
       repoPath
@@ -142,23 +142,61 @@ async function modifyPermalinks(repoPath: string) {
       await simpleGit(repoPath).add(filePath);
     }
   }
-  console.log(changedPermalinks);
 
+  await changePermalinksInFiles(mdFiles, repoPath, changedPermalinks);
+
+  const commitMessage = "chore(Amplify-Migration): Update permalinks in files";
+  await simpleGit(repoPath).commit(commitMessage);
+}
+
+async function changePermalinksInFiles(
+  mdFiles: unknown,
+  repoPath: string,
+  changedPermalinks: { [key: string]: string }
+) {
   for (const file of Object.values(mdFiles as {})) {
     const filePath = path.join(repoPath, file);
-    await changePermalinksInFiles(filePath, repoPath, changedPermalinks);
+    await changePermalinksInMdFile(filePath, repoPath, changedPermalinks);
   }
 
-  const commitMessage =
-    "chore(Amplify-Migration): Update permalinks in .md files";
-  await simpleGit(repoPath).commit(commitMessage);
+  // special file in navigation.yml
+  const navigationYmlPath = path.join(repoPath, "_data/navigation.yml");
+  // find all instances of `url: /some/CAPS/PATH/` and replace with `url: some/path`
+  let navigationYmlContent = (
+    await fs.promises.readFile(navigationYmlPath)
+  ).toString();
+  const urlRegex = /^(.*url:.*)$/gim;
+
+  const matches = navigationYmlContent.match(urlRegex);
+  let navigationFileChanged = false;
+  if (matches) {
+    matches.forEach((match: string) => {
+      match = getRawPermalink(match);
+      if (changedPermalinks[match]) {
+        navigationFileChanged = true;
+        navigationYmlContent = navigationYmlContent.replace(
+          match,
+          changedPermalinks[match]
+        );
+      }
+    });
+  }
+  if (navigationFileChanged) {
+    await fs.promises.writeFile(
+      navigationYmlPath,
+      navigationYmlContent,
+      "utf-8"
+    );
+    await simpleGit(repoPath).add(navigationYmlPath);
+  }
 }
 
 /**
  * Requirements:
- * convert `permalink: /some/path/` to `some/path`
  * convert `/some/path` to `some/path`
  * convert `some/path/` to `some/path`
+ * above two variants with `permalink: ` prefix
+ * above two variants with `url: ` prefix
  * @param permalink original permalink
  * @returns raw permalinks without leading/trailing slash
  */
@@ -166,6 +204,9 @@ function getRawPermalink(permalink: string) {
   let trimmedPermalink = permalink.trim();
   if (trimmedPermalink.startsWith(`permalink: `)) {
     trimmedPermalink = permalink.trim().slice(11);
+  }
+  if (trimmedPermalink.startsWith(`url: `)) {
+    trimmedPermalink = permalink.trim().slice(5);
   }
   if (trimmedPermalink.startsWith(`/`)) {
     trimmedPermalink = trimmedPermalink.slice(1);
@@ -177,7 +218,7 @@ function getRawPermalink(permalink: string) {
   return trimmedPermalink;
 }
 
-async function changePermalinksInFiles(
+async function changePermalinksInMdFile(
   filePath: string,
   repoPath: string,
   changedPermalinks: { [key: string]: string }
@@ -223,7 +264,6 @@ function changeFileContent(
 
   if (markdownMatches) {
     for (const match of markdownMatches) {
-      console.log(match);
       let originalPermalink = match.slice(match.indexOf("(") + 1, -1);
       originalPermalink = getRawPermalink(originalPermalink);
       if (!changedPermalinks[originalPermalink]) {
@@ -236,7 +276,6 @@ function changeFileContent(
       fileChanged = true;
     }
   }
-  console.log(fileContent);
   return { fileContent, fileChanged };
 }
 
@@ -269,7 +308,7 @@ async function pushChangesToRemote({ repoPath }: AmplifyAppInfo) {
 
   await simpleGit(repoPath).push("origin", "staging");
   await simpleGit(repoPath).deleteLocalBranch(BRANCH_NAME);
-  console.log("Merge and delete of add-trailing-slash branch successful");
+  console.info("Merge and delete of add-trailing-slash branch successful");
 }
 
 async function generateSqlCommands({ name, repoName, appId }: AmplifyAppInfo) {
