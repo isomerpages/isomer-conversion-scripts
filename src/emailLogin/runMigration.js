@@ -57,7 +57,10 @@ const getSiteAndContributors = async (site, dbClient) => {
     await dbClient.query(insertQuery);
     console.log(insertQuery);
     try {
-      const dirPath = `./${site}`;
+      if (!fs.existsSync('./emailMigrationData')) {
+        fs.mkdirSync('./emailMigrationData');
+      }
+      const dirPath = `./emailMigrationData/${site}`;
       if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath);
       }
