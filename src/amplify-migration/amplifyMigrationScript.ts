@@ -47,16 +47,24 @@ function readCsvFile(): Promise<[string, string][]> {
 
 async function main() {
   const listOfRepos: [string, string][] = await readCsvFile();
+  const args = process.argv.slice(2);
+
+  let userId = args.find((arg) => arg.startsWith("-user-id="))?.split("=")[1];
+  if (!userId) {
+    console.error("Please provide a user id with the -user-id= flag");
+    return;
+  }
+
   for (const [repoName, name] of listOfRepos) {
     try {
-      await migrateRepo(repoName, name);
+      await migrateRepo(repoName, name, parseInt(userId));
     } catch (e) {
       console.error(e);
     }
   }
 }
 
-async function migrateRepo(repoName: string, name: string) {
+async function migrateRepo(repoName: string, name: string, userId: number) {
   const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
   try {
     const buildSpec = await readBuildSpec();
@@ -71,7 +79,7 @@ async function migrateRepo(repoName: string, name: string) {
     await startReleaseJob(amplifyAppInfo);
     await modifyRepo(amplifyAppInfo);
     await pushChangesToRemote(amplifyAppInfo);
-    await generateSqlCommands(amplifyAppInfo);
+    await generateSqlCommands(amplifyAppInfo, userId);
   } catch (e) {
     console.error(e);
   }
@@ -325,8 +333,10 @@ async function pushChangesToRemote({ repoPath }: AmplifyAppInfo) {
   console.info("Merge and delete of add-trailing-slash branch successful");
 }
 
-async function generateSqlCommands({ name, repoName, appId }: AmplifyAppInfo) {
-  const userId = 457; // todo figure out how to change this hardcoded value to the actual user id
+async function generateSqlCommands(
+  { name, repoName, appId }: AmplifyAppInfo,
+  userId: number
+) {
   const sqlCommands = `INSERT INTO sites (name, api_token_name, site_status, job_status, creator_id)
 VALUES ('${name}', '', 'INITIALIZED', 'READY', '${userId}');
 INSERT INTO repos (name, url, created_at, updated_at, site_id)
