@@ -18,7 +18,7 @@ const removeGithubAccess = async (site) => {
       repo: site,
       permission: 'pull',
     });
-    console.log('Set team permission to read only');
+    console.log(`Set team permission for ${site} to read only`);
   } catch (e) {
     console.log(e);
   }
