@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --ext .js --ext .jsx --ignore-path .gitignore .",
     "lint-fix": "eslint --ignore-path .gitignore . --fix",
-    "amplifyMigration": "npx ts-node src/amplify-migration/amplifyMigrationScript.ts"
+    "amplify:migrate": "npx ts-node src/amplify-migration/amplifyMigrationScript.ts"
   },
   "repository": {
     "type": "git",
