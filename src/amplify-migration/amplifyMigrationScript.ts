@@ -3,8 +3,7 @@ const fs = require("fs");
 const glob = require("glob");
 const path = require("path");
 
-const jsdom = require("jsdom");
-const { JSDOM } = jsdom;
+const { JSDOM } = require("jsdom");
 const {
   createAmplifyBranches,
   startReleaseJob,
