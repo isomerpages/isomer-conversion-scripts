@@ -4,6 +4,8 @@ const glob = require("glob");
 const path = require("path");
 const csv = require("csv-parser");
 const os = require("os");
+const axios = require("axios");
+const { Octokit } = require("@octokit/core");
 require("dotenv").config();
 
 const { JSDOM } = require("jsdom");
@@ -58,10 +60,46 @@ async function main() {
 
   for (const [repoName, name] of listOfRepos) {
     try {
+      if (await isRepoEmpty(repoName)) {
+        console.info(`Skipping ${repoName} as it has no code`);
+        // write repos that have no code to a file
+        fs.appendFileSync(
+          path.join(__dirname, "repos-with-no-code.txt"),
+          `${repoName} ` + os.EOL
+        );
+        continue;
+      }
       await migrateRepo(repoName, name, parseInt(userId));
     } catch (e) {
       console.error(e);
     }
+  }
+}
+
+async function isRepoEmpty(repoName: string): Promise<boolean> {
+  const octokit = new Octokit({
+    auth: process.env.GITHUB_ACCESS_TOKEN,
+  });
+  try {
+    const result = await octokit.request(
+      `GET /repos/${ORGANIZATION_NAME}/${repoName}/contents/README.md`,
+      {
+        owner: ORGANIZATION_NAME,
+        repo: repoName,
+        path: `README.md`,
+        headers: {
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      }
+    );
+    const fileExists = result.status === 200;
+    if (fileExists) return false;
+    throw new Error(`Unexpected status code ${result.status}`);
+  } catch (e: any) {
+    if (e.status === 404) {
+      return true;
+    }
+    throw e;
   }
 }
 
