@@ -60,8 +60,8 @@ async function migrateRepo(repoName: string, name: string) {
   const repoPath = `${homeDir}/isomer-migrations/${repoName}`;
 
   try {
-    const build_spec = await readBuildSpec();
-    const appId = await createAmplifyApp(repoName, build_spec);
+    const buildSpec = await readBuildSpec();
+    const appId = await createAmplifyApp(repoName, buildSpec);
     const amplifyAppInfo: AmplifyAppInfo = {
       appId,
       repoName,
