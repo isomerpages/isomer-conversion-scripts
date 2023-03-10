@@ -24,12 +24,7 @@ const getSiteAndContributors = async (site, dbClient) => {
       return;
     }
     const contributorNames = respData
-      .map((data) => {
-        const {
-          login,
-        } = data;
-        return login;
-      })
+      .map(({ login }) => login)
       .filter((name) => !ISOMER_USERS.includes(name));
     // get user information
     const contributorQuery = `SELECT * FROM "users" WHERE ${contributorNames.map((githubId) => `github_id='${githubId}'`).join(' OR ')};`;
@@ -44,7 +39,6 @@ const getSiteAndContributors = async (site, dbClient) => {
     // get list of whitelisted domains
     const whitelistQuery = 'SELECT * FROM "whitelist" WHERE expiry IS NULL;';
     const whitelistedDomains = (await dbClient.query(whitelistQuery)).rows.map((whitelistData) => whitelistData.email);
-    console.log(whitelistedDomains);
 
     const repoId = repoData[0].id;
     const siteMemberValues = [];
@@ -57,6 +51,7 @@ const getSiteAndContributors = async (site, dbClient) => {
     await dbClient.query(insertQuery);
     console.log(insertQuery);
     try {
+      // write repo information and queries run to file
       if (!fs.existsSync('./emailMigrationData')) {
         fs.mkdirSync('./emailMigrationData');
       }
@@ -67,13 +62,12 @@ const getSiteAndContributors = async (site, dbClient) => {
       fs.writeFileSync(`${dirPath}/contributors.txt`, userData.map((userInfo) => JSON.stringify(userInfo)).join('\n'));
       fs.writeFileSync(`${dirPath}/repos.txt`, JSON.stringify(repoData[0]));
       fs.writeFileSync(`${dirPath}/insertQueries.txt`, insertQuery);
-      // file written successfully
     } catch (err) {
       console.error(err);
     }
-  } catch (e) {
-    console.log(e);
-    throw e;
+  } catch (err) {
+    console.error(`The following error occured while migrating ${site}: ${err}`);
+    throw err;
   }
 };
 
