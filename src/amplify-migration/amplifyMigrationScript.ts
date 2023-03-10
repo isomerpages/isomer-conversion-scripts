@@ -230,7 +230,6 @@ async function changePermalinksInMdFile(
   repoPath: string,
   changedPermalinks: { [key: string]: string }
 ) {
-  // read file content
   let fileContent = await fs.promises.readFile(filePath, "utf-8");
   let fileChanged = false;
 
