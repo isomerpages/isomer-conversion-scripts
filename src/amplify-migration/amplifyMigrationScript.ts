@@ -141,7 +141,6 @@ async function modifyPermalinks(repoPath: string) {
       );
 
       await fs.promises.writeFile(filePath, newFileContent, "utf-8");
-      // remove trailing slash
       newPermalink = getRawPermalink(newPermalink);
       const originalPermalink = getRawPermalink(permalinkLine);
       if (newPermalink !== originalPermalink) {
