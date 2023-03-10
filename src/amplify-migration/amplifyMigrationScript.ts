@@ -150,13 +150,13 @@ async function modifyPermalinks(repoPath: string) {
     }
   }
 
-  await changePermalinksInFiles(mdFiles, repoPath, changedPermalinks);
+  await changePermalinksReference(mdFiles, repoPath, changedPermalinks);
 
   const commitMessage = "chore(Amplify-Migration): Update permalinks in files";
   await simpleGit(repoPath).commit(commitMessage);
 }
 
-async function changePermalinksInFiles(
+async function changePermalinksReference(
   mdFiles: unknown,
   repoPath: string,
   changedPermalinks: { [key: string]: string }
