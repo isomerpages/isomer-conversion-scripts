@@ -91,7 +91,10 @@ async function modifyRepo({ repoName, appId, repoPath }: AmplifyAppInfo) {
     );
   }
 
-  // get list of branches
+  /**
+   * get the list of branches, guaranteed to be in
+   * local since we don't intend to push BRANCH_NAME to remote
+   */
   const branches = await simpleGit(repoPath).branchLocal();
   if (branches.all.includes(BRANCH_NAME)) {
     console.log("Branch already exists. Checking out branch.");
