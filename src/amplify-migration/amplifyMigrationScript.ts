@@ -249,9 +249,10 @@ function changeFileContent(
   changedPermalinks: { [key: string]: string }
 ) {
   let fileChanged = false;
-  // three different regex patterns to take care of
+  // two different permalink patterns to take care of
   // 1. href="original_permalink"
   // 2. [click here](original_permalink)
+  // 1 is solved using JSDOM, 2 is solved using regex
 
   const markdownRegex = /\[(.*?)\]\((.*?)\)/g;
   const dom = new JSDOM(fileContent);
