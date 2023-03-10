@@ -115,8 +115,8 @@ async function modifyPermalinks(repoPath: string) {
     const fileContent = (await fs.promises.readFile(filePath)).toString();
     const permalinkRegex = /^permalink: /m;
     const permalinkIndex = fileContent.search(permalinkRegex);
-
-    if (permalinkIndex !== -1) {
+    const hasPermalink = permalinkIndex !== -1;
+    if (hasPermalink) {
       const permalinkLine = fileContent.slice(
         permalinkIndex,
         fileContent.indexOf("\n", permalinkIndex)
