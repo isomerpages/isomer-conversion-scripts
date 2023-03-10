@@ -56,8 +56,7 @@ async function main() {
 }
 
 async function migrateRepo(repoName: string, name: string) {
-  const homeDir = process.env.HOME;
-  const repoPath = `${homeDir}/isomer-migrations/${repoName}`;
+  const repoPath = `~/isomer-migrations/${repoName}`;
 
   try {
     const buildSpec = await readBuildSpec();
