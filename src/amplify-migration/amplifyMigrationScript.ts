@@ -106,16 +106,7 @@ async function modifyRepo({ repoName, appId, repoPath }: AmplifyAppInfo) {
 }
 
 async function modifyPermalinks(repoPath: string) {
-  const mdFiles = await new Promise((resolve, reject) => {
-    glob("**/*.md", { cwd: repoPath }, (err: any, files: any) => {
-      if (err) {
-        reject(err);
-        throw err;
-      } else {
-        resolve(files);
-      }
-    });
-  });
+  const mdFiles = await glob("**/*.md", { cwd: repoPath });
 
   //dictionary  of changed permalinks
   const changedPermalinks: { [key: string]: string } = {};
