@@ -248,7 +248,7 @@ function changeFileContent(
   fileContent: string,
   changedPermalinks: { [oldPermalink: string]: string }
 ) {
-  let fileChanged = false;
+  let hasFileChanged = false;
   // two different permalink patterns to take care of
   // 1. href="original_permalink"
   // 2. [click here](original_permalink)
@@ -262,11 +262,13 @@ function changeFileContent(
 
     if (changedPermalinks[rawPermalink]) {
       a.href = a.href.replace(rawPermalink, changedPermalinks[rawPermalink]);
-      fileChanged = true;
+      hasFileChanged = true;
     }
   });
 
-  fileContent = fileChanged ? dom.window.document.body.innerHTML : fileContent;
+  fileContent = hasFileChanged
+    ? dom.window.document.body.innerHTML
+    : fileContent;
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex);
 
   if (markdownRelativeUrlMatches) {
@@ -280,30 +282,32 @@ function changeFileContent(
       const newMatch = match.replace(originalPermalink, newPermalink);
       fileContent = fileContent.replace(match, newMatch);
 
-      fileChanged = true;
+      hasFileChanged = true;
     }
   }
-  return { fileContent, fileChanged };
+  return { fileContent, fileChanged: hasFileChanged };
 }
 
 async function updateConfigYml(appId: string, repoPath: string) {
-  const configFile = path.join(repoPath, `_config.yml`);
+  const configFilePath = path.join(repoPath, `_config.yml`);
 
   // Read the file into a variable
-  let configYml = await fs.promises.readFile(configFile, { encoding: "utf-8" });
-  configYml = configYml.replace(
+  let configYmlContent = await fs.promises.readFile(configFilePath, {
+    encoding: "utf-8",
+  });
+  configYmlContent = configYmlContent.replace(
     /^staging:\s*https:\/\/.*$/gm,
     `staging: https://staging.${appId}.amplifyapp.com/`
   );
 
-  configYml = configYml.replace(
+  configYmlContent = configYmlContent.replace(
     /^prod:\s*https:\/\/.*$/gm,
     `prod: https://master.${appId}.amplifyapp.com/`
   );
   // Write the modified yaml file back to disk
-  await fs.promises.writeFile(configFile, configYml);
+  await fs.promises.writeFile(configFilePath, configYmlContent);
 
-  await simpleGit(repoPath).add(configFile);
+  await simpleGit(repoPath).add(configFilePath);
   await simpleGit(repoPath).commit(
     "chore(Amplify-Migration): update config.yml file"
   );
