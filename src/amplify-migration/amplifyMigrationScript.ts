@@ -256,7 +256,7 @@ function changeFileContent(
   const markdownRegex = /\[(.*?)\]\((.*?)\)/g;
   const dom = new JSDOM(fileContent);
   dom.window.document.querySelectorAll("a").forEach((a: any) => {
-    //replace permalinks with lowercase and in changedPermalinks
+    // replace permalinks with lowercase and in changedPermalinks
     let rawPermalink = getRawPermalink(a.href);
 
     if (changedPermalinks[rawPermalink]) {
