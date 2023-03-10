@@ -87,9 +87,6 @@ async function isRepoEmpty(repoName: string): Promise<boolean> {
         owner: ORGANIZATION_NAME,
         repo: repoName,
         path: `README.md`,
-        headers: {
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
       }
     );
     const fileExists = result.status === 200;
