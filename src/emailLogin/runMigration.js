@@ -34,13 +34,13 @@ const getSiteAndContributors = async (site, dbClient) => {
     // get repo information
     const repoQuery = `SELECT sites.id, sites.job_status, sites.site_status, repos.name FROM "sites" JOIN "repos" ON sites.id = repos.site_id WHERE repos.name='${site}';`;
     const repoData = (await dbClient.query(repoQuery)).rows;
+    const repoId = repoData[0].id;
     console.log(repoData);
 
     // get list of whitelisted domains
     const whitelistQuery = 'SELECT * FROM "whitelist" WHERE expiry IS NULL;';
     const whitelistedDomains = (await dbClient.query(whitelistQuery)).rows.map((whitelistData) => whitelistData.email);
 
-    const repoId = repoData[0].id;
     const siteMemberValues = [];
     userData.forEach((user) => {
       const userId = user.id;
