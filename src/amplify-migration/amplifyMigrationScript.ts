@@ -267,10 +267,10 @@ function changeFileContent(
   });
 
   fileContent = fileChanged ? dom.window.document.body.innerHTML : fileContent;
-  const markdownMatches = fileContent.match(markdownRegex);
+  const markdownRelativeUrlMatches = fileContent.match(markdownRegex);
 
-  if (markdownMatches) {
-    for (const match of markdownMatches) {
+  if (markdownRelativeUrlMatches) {
+    for (const match of markdownRelativeUrlMatches) {
       let originalPermalink = match.slice(match.indexOf("(") + 1, -1);
       originalPermalink = getRawPermalink(originalPermalink);
       if (!changedPermalinks[originalPermalink]) {
