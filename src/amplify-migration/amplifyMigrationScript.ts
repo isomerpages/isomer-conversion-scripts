@@ -4,6 +4,7 @@ const glob = require("glob");
 const path = require("path");
 const csv = require("csv-parser");
 const os = require("os");
+require("dotenv").config();
 
 const { JSDOM } = require("jsdom");
 const {
