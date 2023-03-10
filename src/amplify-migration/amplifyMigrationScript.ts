@@ -108,7 +108,7 @@ async function modifyRepo({ repoName, appId, repoPath }: AmplifyAppInfo) {
 async function modifyPermalinks(repoPath: string) {
   const mdFiles = await glob("**/*.md", { cwd: repoPath });
 
-  //dictionary  of changed permalinks
+  // dictionary  of changed permalinks
   const changedPermalinks: { [key: string]: string } = {};
 
   // eslint-disable-next-line no-restricted-syntax
