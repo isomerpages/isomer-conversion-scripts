@@ -2,6 +2,7 @@ const simpleGit = require("simple-git");
 const fs = require("fs");
 const glob = require("glob");
 const path = require("path");
+const csv = require("csv-parser");
 
 const { JSDOM } = require("jsdom");
 const {
@@ -20,11 +21,31 @@ interface AmplifyAppInfo {
   repoPath: string;
 }
 
-const listOfRepos: [string, string][] = [
-  ["repo-name", "Human Friendly Name"], // Modify this line when running the script
-];
+function readCsvFile(): Promise<[string, string][]> {
+  // read file list-of-repos.csv
+  const filePath = path.join(__dirname, "list-of-repos.csv");
+  return new Promise((resolve, reject) => {
+    const results: [string, string][] = [];
+
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on(
+        "data",
+        (data: { repo_name: string; human_friendly_name: string }) => {
+          results.push([data.repo_name, data.human_friendly_name]);
+        }
+      )
+      .on("end", () => {
+        resolve(results);
+      })
+      .on("error", (err: any) => {
+        reject(err);
+      });
+  });
+}
 
 async function main() {
+  const listOfRepos: [string, string][] = await readCsvFile();
   for (const [repoName, name] of listOfRepos) {
     try {
       await migrateRepo(repoName, name);

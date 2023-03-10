@@ -28,8 +28,8 @@ node migrationScript.js <repo name>
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-1. Navigate to src/amplify-migration/amplifyMigrationScript.ts
-2. Change the variable `listOfRepos` to the desired repos to be changed
-3. Run `npm run amplifyMigration` in the command line
+1. Navigate to src/amplify-migration/list-of-repos.csv
+2. Populate the csv file with the desired values
+3. Run `npm run amplify:migrate` in the command line
 4. Navigate to `src/amplify-migration/sqlcommands.txt`
 5. Copy over the appended commands in the file and run them on production DB
