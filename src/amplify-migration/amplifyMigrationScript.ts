@@ -246,7 +246,7 @@ async function changePermalinksInMdFile(
 
 function changeFileContent(
   fileContent: string,
-  changedPermalinks: { [key: string]: string }
+  changedPermalinks: { [oldPermalink: string]: string }
 ) {
   let fileChanged = false;
   // two different permalink patterns to take care of
