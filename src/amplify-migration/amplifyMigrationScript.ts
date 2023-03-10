@@ -3,6 +3,7 @@ const fs = require("fs");
 const glob = require("glob");
 const path = require("path");
 const csv = require("csv-parser");
+const os = require("os");
 
 const { JSDOM } = require("jsdom");
 const {
@@ -56,8 +57,7 @@ async function main() {
 }
 
 async function migrateRepo(repoName: string, name: string) {
-  const repoPath = `~/isomer-migrations/${repoName}`;
-
+  const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
   try {
     const buildSpec = await readBuildSpec();
     const appId = await createAmplifyApp(repoName, buildSpec);
@@ -106,13 +106,11 @@ async function modifyRepo({ repoName, appId, repoPath }: AmplifyAppInfo) {
 }
 
 async function modifyPermalinks(repoPath: string) {
-  const mdFiles = await glob("**/*.md", { cwd: repoPath });
-
+  const mdFiles: string[] = await glob("**/*.md", { cwd: repoPath });
   // dictionary  of changed permalinks
   const changedPermalinks: { [key: string]: string } = {};
 
-  // eslint-disable-next-line no-restricted-syntax
-  for (const file of Object.values(mdFiles as {})) {
+  for (const file of mdFiles) {
     const filePath = path.join(repoPath, file);
     const fileContent = (await fs.promises.readFile(filePath)).toString();
     const permalinkRegex = /^permalink: /m;
@@ -143,7 +141,7 @@ async function modifyPermalinks(repoPath: string) {
       );
 
       await fs.promises.writeFile(filePath, newFileContent, "utf-8");
-      //remove trailing slash
+      // remove trailing slash
       newPermalink = getRawPermalink(newPermalink);
       const originalPermalink = getRawPermalink(permalinkLine);
       if (newPermalink !== originalPermalink) {
