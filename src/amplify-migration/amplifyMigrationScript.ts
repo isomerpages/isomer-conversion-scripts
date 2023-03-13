@@ -71,7 +71,7 @@ async function main() {
       }
       await migrateRepo(repoName, name, parseInt(userId));
     } catch (e) {
-      console.error(e);
+      console.error(`Error occurred for ${repoName}: ${e}`);
     }
   }
 }
