@@ -42,11 +42,20 @@ const getSiteAndContributors = async (site, dbClient) => {
     const whitelistQuery = 'SELECT * FROM "whitelist" WHERE expiry IS NULL;';
     const whitelistedDomains = (await dbClient.query(whitelistQuery)).rows.map((whitelistData) => whitelistData.email);
 
+    // Migration army users - only whitelisted gmail/ymail/hotmail accounts in our db
+    // eslint-disable-next-line quotes
+    const isomerWhitelistQuery = `SELECT * FROM "whitelist" WHERE email LIKE '%@gmail.com' OR email LIKE '%@ymail.com' OR email LIKE '%@hotmail.com';`;
+    const additionalIsomerEmails = (await dbClient.query(isomerWhitelistQuery)).rows.map((whitelistData) => whitelistData.email);
+
     const siteMemberValues = [];
     userData.forEach((user) => {
       const userId = user.id;
       if (!user.email) {
         // User not registered to an email
+        return;
+      }
+      if (additionalIsomerEmails.includes(user.email) || user.email.endsWith('@open.gov.sg')) {
+        // User is from migration army
         return;
       }
       const userType = whitelistedDomains.filter((domain) => user.email.endsWith(domain)).length > 0 ? 'ADMIN' : 'CONTRIBUTOR';
