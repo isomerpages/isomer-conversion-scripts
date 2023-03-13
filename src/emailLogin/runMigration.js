@@ -51,7 +51,7 @@ const getSiteAndContributors = async (site, dbClient) => {
     console.log(userData);
 
     // get repo information
-    const repoQuery = `SELECT sites.id, sites.job_status, sites.site_status, repos.name FROM "sites" JOIN "repos" ON sites.id = repos.site_id WHERE repos.name='${site}';`;
+    const repoQuery = `SELECT sites.id, sites.job_status, sites.site_status, repos.name FROM "sites" JOIN "repos" ON sites.id = repos.site_id WHERE repos.name='${site}' AND sites.site_status != 'EMPTY';`;
     const repoData = (await dbClient.query(repoQuery)).rows;
     console.log(repoData);
     if (repoData.length !== 1) {
