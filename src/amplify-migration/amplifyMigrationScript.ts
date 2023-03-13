@@ -53,13 +53,15 @@ async function main() {
   const listOfRepos: [string, string][] = await readCsvFile();
   const args = process.argv.slice(2);
 
-  let userId = args.find((arg) => arg.startsWith("-user-id="))?.split("=")[1];
-  if (!userId) {
+  const userIdString = args
+    .find((arg) => arg.startsWith("-user-id="))
+    ?.split("=")[1];
+  if (!userIdString) {
     console.error("Please provide a user id with the -user-id= flag");
     return;
   }
-
-  for (const [repoName, name] of listOfRepos) {
+  const userId = parseInt(userIdString);
+  listOfRepos.map(async ([repoName, name]) => {
     try {
       if (await isRepoEmpty(repoName)) {
         console.info(`Skipping ${repoName} as it has no code`);
@@ -68,13 +70,13 @@ async function main() {
           path.join(__dirname, "repos-with-no-code.txt"),
           `${repoName} ` + os.EOL
         );
-        continue;
+        return;
       }
-      await migrateRepo(repoName, name, parseInt(userId));
+      await migrateRepo(repoName, name, userId);
     } catch (e) {
       console.error(`Error occurred for ${repoName}: ${e}`);
     }
-  }
+  });
 }
 
 async function isRepoEmpty(repoName: string): Promise<boolean> {
@@ -157,8 +159,7 @@ async function modifyPermalinks(repoPath: string) {
   const mdFiles: string[] = await glob("**/*.md", { cwd: repoPath });
   // dictionary  of changed permalinks
   const changedPermalinks: { [key: string]: string } = {};
-
-  for (const file of mdFiles) {
+  mdFiles.map(async (file) => {
     const filePath = path.join(repoPath, file);
     const fileContent = (await fs.promises.readFile(filePath)).toString();
     const permalinkIndex = fileContent.search(PERMALINK_REGEX);
@@ -192,7 +193,7 @@ async function modifyPermalinks(repoPath: string) {
       }
       await simpleGit(repoPath).add(filePath);
     }
-  }
+  });
 
   await changePermalinksReference(mdFiles, repoPath, changedPermalinks);
 
@@ -205,10 +206,10 @@ async function changePermalinksReference(
   repoPath: string,
   changedPermalinks: { [key: string]: string }
 ) {
-  for (const file of mdFiles) {
+  mdFiles.map(async (file) => {
     const filePath = path.join(repoPath, file);
     await changePermalinksInMdFile(filePath, repoPath, changedPermalinks);
-  }
+  });
 
   // special file in navigation.yml
   const navigationYmlPath = path.join(repoPath, "_data/navigation.yml");
@@ -316,18 +317,18 @@ function changeFileContent(
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex);
 
   if (markdownRelativeUrlMatches) {
-    for (const match of markdownRelativeUrlMatches) {
+    markdownRelativeUrlMatches.map((match) => {
       let originalPermalink = match.slice(match.indexOf("(") + 1, -1);
       originalPermalink = getRawPermalink(originalPermalink);
       if (!changedPermalinks[originalPermalink]) {
-        continue;
+        return;
       }
       const newPermalink = originalPermalink.toLocaleLowerCase();
       const newMatch = match.replace(originalPermalink, newPermalink);
       fileContent = fileContent.replace(match, newMatch);
 
       hasFileChanged = true;
-    }
+    });
   }
   return { fileContent, fileChanged: hasFileChanged };
 }
