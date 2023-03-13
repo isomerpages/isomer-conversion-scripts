@@ -61,6 +61,10 @@ const getSiteAndContributors = async (site, dbClient) => {
       const userType = whitelistedDomains.filter((domain) => user.email.endsWith(domain)).length > 0 ? 'ADMIN' : 'CONTRIBUTOR';
       siteMemberValues.push(`(${userId}, ${repoId}, '${userType}')`);
     });
+    if (siteMemberValues.length === 0) {
+      console.log(`${site} has no CMS editors`);
+      return;
+    }
     const insertQuery = `INSERT INTO "site_members" (user_id, site_id, role) VALUES\n${siteMemberValues.join(',\n')};`;
     await dbClient.query(insertQuery);
     console.log(insertQuery);
