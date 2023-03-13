@@ -212,7 +212,7 @@ async function changePermalinksReference(
 
   // special file in navigation.yml
   const navigationYmlPath = path.join(repoPath, "_data/navigation.yml");
-  // find all instances of `url: /some/CAPS/PATH/` and replace with `url: some/path`
+  // find all instances of `url: /some/CAPS/PATH/` and replace with `url: some/caps/path`
   let navigationYmlContent = (
     await fs.promises.readFile(navigationYmlPath)
   ).toString();
