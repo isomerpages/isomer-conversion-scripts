@@ -201,11 +201,11 @@ async function modifyPermalinks(repoPath: string) {
 }
 
 async function changePermalinksReference(
-  mdFiles: unknown,
+  mdFiles: string[],
   repoPath: string,
   changedPermalinks: { [key: string]: string }
 ) {
-  for (const file of Object.values(mdFiles as {})) {
+  for (const file of mdFiles) {
     const filePath = path.join(repoPath, file);
     await changePermalinksInMdFile(filePath, repoPath, changedPermalinks);
   }
