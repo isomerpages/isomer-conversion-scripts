@@ -17,6 +17,7 @@ const {
 } = require("./amplifyUtils");
 const BRANCH_NAME = "chore-amplify-migration-change-permalinks";
 const ORGANIZATION_NAME = "isomerpages";
+const PERMALINK_REGEX = /^permalink: /m;
 
 interface AmplifyAppInfo {
   appId: string;
@@ -160,8 +161,7 @@ async function modifyPermalinks(repoPath: string) {
   for (const file of mdFiles) {
     const filePath = path.join(repoPath, file);
     const fileContent = (await fs.promises.readFile(filePath)).toString();
-    const permalinkRegex = /^permalink: /m;
-    const permalinkIndex = fileContent.search(permalinkRegex);
+    const permalinkIndex = fileContent.search(PERMALINK_REGEX);
     const hasPermalink = permalinkIndex !== -1;
     if (hasPermalink) {
       const permalinkLine = fileContent.slice(
