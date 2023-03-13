@@ -35,8 +35,13 @@ const getSiteAndContributors = async (site, dbClient) => {
     // get repo information
     const repoQuery = `SELECT sites.id, sites.job_status, sites.site_status, repos.name FROM "sites" JOIN "repos" ON sites.id = repos.site_id WHERE repos.name='${site}';`;
     const repoData = (await dbClient.query(repoQuery)).rows;
-    const repoId = repoData[0].id;
     console.log(repoData);
+    if (repoData.length !== 1) {
+      // We expect to see exactly one entry for this repo name - any other number of entries is an error
+      console.error(`${site} has multiple matching entries or no matching entries - please check entry again`);
+      return;
+    }
+    const repoId = repoData[0].id;
 
     // get list of whitelisted domains
     const whitelistQuery = 'SELECT * FROM "whitelist" WHERE expiry IS NULL;';
