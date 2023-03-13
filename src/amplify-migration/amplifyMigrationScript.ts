@@ -170,18 +170,13 @@ async function modifyPermalinks(repoPath: string) {
       );
       let permalinkLineTrimmed = permalinkLine.trim();
 
-      let hasTrailingQuotation = false;
-      if (permalinkLineTrimmed.endsWith(`"`)) {
-        hasTrailingQuotation = true;
-        permalinkLineTrimmed = permalinkLineTrimmed.slice(0, -1);
-      }
+      // check if permalink has quotation marks, if so, remove them
+      permalinkLineTrimmed = permalinkLineTrimmed.replace(/"/g, "");
+
       const permalinkWithSlash = permalinkLineTrimmed.endsWith("/")
         ? permalinkLineTrimmed
         : `${permalinkLineTrimmed}/`;
       let newPermalink = permalinkWithSlash.toLocaleLowerCase();
-      if (hasTrailingQuotation) {
-        newPermalink = `${newPermalink}"`;
-      }
       const newFileContent = fileContent.replace(
         permalinkLine.trim(),
         newPermalink
