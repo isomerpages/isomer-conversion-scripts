@@ -10,6 +10,24 @@ const ISOMER_USERS = ['isomeradmin', 'rc-davis', 'lamkeewei', 'pallani', 'LoneRi
 // name of repo
 const REPO = process.argv[2];
 
+const writeMigrationInfoToRecords = async (site, contributorRecord, repoRecord, insertRecord) => {
+  try {
+    // write repo information and queries run to file
+    if (!fs.existsSync('./emailMigrationData')) {
+      fs.mkdirSync('./emailMigrationData');
+    }
+    const dirPath = `./emailMigrationData/${site}`;
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath);
+    }
+    fs.writeFileSync(`${dirPath}/contributors.txt`, contributorRecord);
+    fs.writeFileSync(`${dirPath}/repos.txt`, repoRecord);
+    fs.writeFileSync(`${dirPath}/insertQueries.txt`, insertRecord);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 const getSiteAndContributors = async (site, dbClient) => {
   try {
     const { data: respData } = await axios.get(
@@ -73,21 +91,7 @@ const getSiteAndContributors = async (site, dbClient) => {
     const insertQuery = `INSERT INTO "site_members" (user_id, site_id, role) VALUES\n${siteMemberValues.join(',\n')};`;
     await dbClient.query(insertQuery);
     console.log(insertQuery);
-    try {
-      // write repo information and queries run to file
-      if (!fs.existsSync('./emailMigrationData')) {
-        fs.mkdirSync('./emailMigrationData');
-      }
-      const dirPath = `./emailMigrationData/${site}`;
-      if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath);
-      }
-      fs.writeFileSync(`${dirPath}/contributors.txt`, userData.map((userInfo) => JSON.stringify(userInfo)).join('\n'));
-      fs.writeFileSync(`${dirPath}/repos.txt`, JSON.stringify(repoData[0]));
-      fs.writeFileSync(`${dirPath}/insertQueries.txt`, insertQuery);
-    } catch (err) {
-      console.error(err);
-    }
+    await writeMigrationInfoToRecords(site, userData.map((userInfo) => JSON.stringify(userInfo)).join('\n'), JSON.stringify(repoData[0]), insertQuery);
   } catch (err) {
     console.error(`The following error occured while migrating ${site}: ${err}`);
     throw err;
