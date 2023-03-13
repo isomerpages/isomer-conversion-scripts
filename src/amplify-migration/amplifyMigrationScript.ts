@@ -173,6 +173,8 @@ async function modifyPermalinks(repoPath: string) {
       // check if permalink has quotation marks, if so, remove them
       permalinkLineTrimmed = permalinkLineTrimmed.replace(/"/g, "");
 
+      // NOTE: this is to allow backward compatibility with existing netlify sites
+      // To read more: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9baff55ef4aebbe9f472fadf5a096?pvs=4
       const permalinkWithSlash = permalinkLineTrimmed.endsWith("/")
         ? permalinkLineTrimmed
         : `${permalinkLineTrimmed}/`;
