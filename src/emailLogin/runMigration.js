@@ -45,6 +45,10 @@ const getSiteAndContributors = async (site, dbClient) => {
     const siteMemberValues = [];
     userData.forEach((user) => {
       const userId = user.id;
+      if (!user.email) {
+        // User not registered to an email
+        return;
+      }
       const userType = whitelistedDomains.filter((domain) => user.email.endsWith(domain)).length > 0 ? 'ADMIN' : 'CONTRIBUTOR';
       siteMemberValues.push(`(${userId}, ${repoId}, '${userType}')`);
     });
