@@ -21,6 +21,7 @@ const getSiteAndContributors = async (site, dbClient) => {
       },
     );
     if (!respData) {
+      console.error(`${site} has no members in the team - please check that the repo name and team name are the same`);
       return;
     }
     const contributorNames = respData
