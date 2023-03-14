@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const { getDb } = require('../../db/index');
 
-const { PERSONAL_ACCESS_TOKEN, GITHUB_ORG_NAME: ISOMER_GITHUB_ORG_NAME } = process.env;
+const { GITHUB_ACCESS_TOKEN, GITHUB_ORG_NAME: ISOMER_GITHUB_ORG_NAME } = process.env;
 
 const ISOMER_USERS = ['isomeradmin', 'rc-davis', 'lamkeewei', 'pallani', 'LoneRifle', 'prestonlimlianjie', 'alexanderleegs', 'lisatjide', 'kwajiehao', 'gweiying', 'seaerchin', 'isomer-demo', 'NatMaeTan', ' jacksonOGP', 'chienlinggg', 'kathleenkhy', 'joshuajunmingt', 'audreytcy', 'yanjunquek', 'chloe-opengovsg', 'shazlithebestie', 'lennardl', 'oliverli', 'taufiq'];
 
@@ -34,7 +34,7 @@ const getSiteAndContributors = async (site, dbClient) => {
       `https://api.github.com/orgs/${ISOMER_GITHUB_ORG_NAME}/teams/${site}/members`,
       {
         headers: {
-          Authorization: `token ${PERSONAL_ACCESS_TOKEN}`,
+          Authorization: `token ${GITHUB_ACCESS_TOKEN}`,
         },
       },
     );

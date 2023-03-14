@@ -6,10 +6,10 @@ const { Octokit } = require('octokit');
 // name of repo
 const REPO = process.argv[2];
 
-const { PERSONAL_ACCESS_TOKEN, GITHUB_ORG_NAME } = process.env;
+const { GITHUB_ACCESS_TOKEN, GITHUB_ORG_NAME } = process.env;
 
 const octokit = new Octokit({
-  auth: PERSONAL_ACCESS_TOKEN,
+  auth: GITHUB_ACCESS_TOKEN,
 });
 
 const removeGithubAccess = async (site) => {
@@ -18,7 +18,7 @@ const removeGithubAccess = async (site) => {
       `https://api.github.com/orgs/${GITHUB_ORG_NAME}/teams/${site}/members`,
       {
         headers: {
-          Authorization: `token ${PERSONAL_ACCESS_TOKEN}`,
+          Authorization: `token ${GITHUB_ACCESS_TOKEN}`,
         },
       },
     );
