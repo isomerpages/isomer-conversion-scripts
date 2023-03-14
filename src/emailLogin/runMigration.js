@@ -101,9 +101,11 @@ const getSiteAndContributors = async (site, dbClient) => {
 const main = async () => {
   const dbClient = await getDb();
 
-  await getSiteAndContributors(REPO, dbClient);
-
-  dbClient.end();
+  try {
+    await getSiteAndContributors(REPO, dbClient);
+  } finally {
+    dbClient.end();
+  }
 };
 
 main();
