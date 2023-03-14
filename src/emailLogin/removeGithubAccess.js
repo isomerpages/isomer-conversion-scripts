@@ -11,14 +11,8 @@ const octokit = new Octokit({
 
 const removeGithubAccess = async (site) => {
   try {
-    await octokit.request(`PUT /orgs/${GITHUB_ORG_NAME}/teams/${site}/repos/${GITHUB_ORG_NAME}/${site}`, {
-      org: GITHUB_ORG_NAME,
-      team_slug: site,
-      owner: GITHUB_ORG_NAME,
-      repo: site,
-      permission: 'pull',
-    });
-    console.log(`Set team permission for ${site} to read only`);
+    await octokit.request(`DELETE /orgs/${GITHUB_ORG_NAME}/teams/${site}/repos/${GITHUB_ORG_NAME}/${site}`);
+    console.log(`Removing team access for ${site}`);
   } catch (e) {
     console.log(e);
   }
