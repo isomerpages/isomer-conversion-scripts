@@ -40,8 +40,8 @@ const removeGithubAccess = async (site) => {
 
     await octokit.request(`DELETE /orgs/${GITHUB_ORG_NAME}/teams/${site}/repos/${GITHUB_ORG_NAME}/${site}`);
     console.log(`Removing team access for ${site}`);
-  } catch (e) {
-    console.log(e);
+  } catch (err) {
+    console.error(`The following error was encountered while migrating site ${site}: ${err}`);
   }
 };
 

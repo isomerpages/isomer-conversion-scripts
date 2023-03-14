@@ -24,7 +24,7 @@ const writeMigrationInfoToRecords = async (site, contributorRecord, repoRecord, 
     fs.writeFileSync(`${dirPath}/repos.txt`, repoRecord);
     fs.writeFileSync(`${dirPath}/insertQueries.txt`, insertRecord);
   } catch (err) {
-    console.error(err);
+    console.error(`The following error was encountered while migrating site ${site}: ${err}`);
   }
 };
 
