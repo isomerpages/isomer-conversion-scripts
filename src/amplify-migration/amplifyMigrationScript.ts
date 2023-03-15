@@ -16,7 +16,7 @@ const {
   readBuildSpec,
 } = require("./amplifyUtils");
 const BRANCH_NAME = "chore-amplify-migration-change-permalinks";
-const ORGANIZATION_NAME = "isomerpages";
+
 const PERMALINK_REGEX = /^permalink: /m;
 
 interface AmplifyAppInfo {
