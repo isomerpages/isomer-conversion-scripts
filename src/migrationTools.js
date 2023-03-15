@@ -1,5 +1,5 @@
 /* eslint-disable no-param-reassign */
-const utils = require('./utils');
+const utils = require("./utils/v2MigrationUtils");
 /*
  *
  * Conversion Tools
@@ -8,16 +8,21 @@ const utils = require('./utils');
 
 // add a footer.yml file
 // eslint-disable-next-line max-len
-function footerGenerator(confObj, privacyFrontMatter, termsFrontMatter, contactUsFrontMatter, socialMediaObj) {
+function footerGenerator(
+  confObj,
+  privacyFrontMatter,
+  termsFrontMatter,
+  contactUsFrontMatter,
+  socialMediaObj
+) {
   const footer = {
     show_reach: true,
-    copyright_agency: 'Open Government Products',
+    copyright_agency: "Open Government Products",
   };
 
   if (contactUsFrontMatter) {
     footer.contact_us = contactUsFrontMatter.permalink;
   }
-
 
   if (confObj) {
     footer.faq = confObj.faq_url;
@@ -57,33 +62,33 @@ function configYmlModifier(confObject, homepageObject, navigationObject) {
 
   // fields to remove
   const toRemove = [
-    'email',
-    'baseurl',
-    'markdown',
-    'twitter_username',
-    'github_username',
-    'breadcrumbs',
-    'faq_url',
-    'faq_url_external',
-    'feedback_form_url',
-    'homepage_hero_i_want_to',
-    'homepage_programmes',
-    'homepage_resources',
-    'homepage_careers',
+    "email",
+    "baseurl",
+    "markdown",
+    "twitter_username",
+    "github_username",
+    "breadcrumbs",
+    "faq_url",
+    "faq_url_external",
+    "feedback_form_url",
+    "homepage_hero_i_want_to",
+    "homepage_programmes",
+    "homepage_resources",
+    "homepage_careers",
   ];
   toRemove.forEach((el) => delete confObj[el]);
 
   // fields to add
   Object.assign(confObj, {
     favicon: homepageObj.favicon,
-    'google_analytics': homepageObj['google-analytics'],
-    remote_theme: 'isomerpages/isomerpages-template@next-gen',
-    permalink: 'none',
-    baseurl: '',
+    google_analytics: homepageObj["google-analytics"],
+    remote_theme: "isomerpages/isomerpages-template@next-gen",
+    permalink: "none",
+    baseurl: "",
     defaults: [
       {
-        scope: { path: '' },
-        values: { layout: 'page' },
+        scope: { path: "" },
+        values: { layout: "page" },
       },
     ],
   });
@@ -91,7 +96,12 @@ function configYmlModifier(confObject, homepageObject, navigationObject) {
   // fields to modify
   // according to V2 migration guide, need to modify CSS but correct
   // information not reflected in repo
-  confObj.plugins = ['jekyll-feed', 'jekyll-assets', 'jekyll-paginate', 'jekyll-sitemap'];
+  confObj.plugins = [
+    "jekyll-feed",
+    "jekyll-assets",
+    "jekyll-paginate",
+    "jekyll-sitemap",
+  ];
 
   // permalink template
   // const permalinkTemplate = '/:collection/:path/:title';
@@ -123,10 +133,10 @@ function navYmlModifier(homepageObject, navigationObject) {
   let navigationObj = { ...navigationObject };
 
   // get the agency logo
-  const logo = homepageObj['agency-logo'];
+  const logo = homepageObj["agency-logo"];
 
   // get the resources room title
-  const resourcesTitle = homepageObj['resources-title'];
+  const resourcesTitle = homepageObj["resources-title"];
 
   // modifications to objects in navigation.yml
   navigationObj = Object.values(navigationObj).map((el) => {
@@ -136,23 +146,23 @@ function navYmlModifier(homepageObject, navigationObject) {
         title: el.title,
         resource_room: true,
       };
-    } 
+    }
 
     // if it has sublinks, we need to determine if it is a collection or not
-    if (el['sub-links']) {
+    if (el["sub-links"]) {
       if (el.false_collection === true) {
         // rename sub-links to sublinks
-        el.sublinks = el['sub-links'];
+        el.sublinks = el["sub-links"];
       } else {
         el.collection = utils.slugify(el.title);
       }
 
       // delete sub-links attribute
-      delete el['sub-links'];
+      delete el["sub-links"];
     }
 
     // if it's a collection, it doesn't need the url attribute
-    if (el.collection) delete el['url']
+    if (el.collection) delete el["url"];
 
     return el;
   });
@@ -177,7 +187,9 @@ function contactUsModifier(contactUsObject, contactUsMarkdown) {
     contactUsObj.contacts.forEach((curr) => {
       if (curr.content) {
         // replace individual elements in content
-        curr.content = curr.content.map((ele) => utils.contactUsLineChecker(ele.line)).filter(x => !!x);
+        curr.content = curr.content
+          .map((ele) => utils.contactUsLineChecker(ele.line))
+          .filter((x) => !!x);
       }
     });
 
@@ -188,16 +200,16 @@ function contactUsModifier(contactUsObject, contactUsMarkdown) {
   if (contactUsObj.locations) {
     contactUsObj.locations.forEach((curr) => {
       // replace operating-hours with operating_hours and delete original
-      if (curr['operating-hours']) {
-        curr.operating_hours = curr['operating-hours'];
-        delete curr['operating-hours'];
+      if (curr["operating-hours"]) {
+        curr.operating_hours = curr["operating-hours"];
+        delete curr["operating-hours"];
       }
 
       // if title is not present, default to HQ address
-      if (!curr.title && curr.address) curr.title = 'HQ Address'
+      if (!curr.title && curr.address) curr.title = "HQ Address";
 
       // split location address into different lines
-      if (curr.address) curr.address = curr.address.split('<br>');
+      if (curr.address) curr.address = curr.address.split("<br>");
     });
   }
 
@@ -226,8 +238,8 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
   if (homepageFields.i_want_to) {
     Object.assign(sections[0].hero, {
       dropdown: {
-        title: homepageObj['hero-dropdown-text'],
-        options: homepageObj['i-want-to'],
+        title: homepageObj["hero-dropdown-text"],
+        options: homepageObj["i-want-to"],
       },
     });
   }
@@ -236,27 +248,27 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
   if (homepageFields.programmes) {
     sections.push({
       infobar: {
-        title: homepageObj['programmes-subtitle'],
-        subtitle: homepageObj['programmes-title'],
-        description: homepageObj['programmes-description'],
-        button: homepageObj['programmes-more-button'],
-        url: homepageObj['programmes-more-button-url'],
+        title: homepageObj["programmes-subtitle"],
+        subtitle: homepageObj["programmes-title"],
+        description: homepageObj["programmes-description"],
+        button: homepageObj["programmes-more-button"],
+        url: homepageObj["programmes-more-button-url"],
       },
     });
   }
 
   // info-sections
-  if (homepageObj['info-sections']) {
-    homepageObj['info-sections'].forEach((curr) => {
+  if (homepageObj["info-sections"]) {
+    homepageObj["info-sections"].forEach((curr) => {
       sections.push({
         infopic: {
-          title: curr['section-subtitle'],
-          subtitle: curr['section-title'],
-          description: curr['section-description'],
-          url: curr['section-more-button-url'],
-          image: curr['section-image-path'],
-          alt: curr['section-image-alt'] || 'alt text',
-          button: curr['section-more-button'],
+          title: curr["section-subtitle"],
+          subtitle: curr["section-title"],
+          description: curr["section-description"],
+          url: curr["section-more-button-url"],
+          image: curr["section-image-path"],
+          alt: curr["section-image-alt"] || "alt text",
+          button: curr["section-more-button"],
         },
       });
     });
@@ -267,10 +279,10 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
     Object.assign(resources, {
       resources: {
         // Title and subtitle are swapped due to an error in the V2 template
-        title: homepageObj['resources-subtitle'],
-        subtitle: homepageObj['resources-title'],
-        button: homepageObj['resources-more-button'],
-        url: homepageObj['resources-more-button-url'],
+        title: homepageObj["resources-subtitle"],
+        subtitle: homepageObj["resources-title"],
+        button: homepageObj["resources-more-button"],
+        url: homepageObj["resources-more-button-url"],
       },
     });
 
@@ -284,21 +296,21 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
   */
 
   // hero banner
-  if (homepageObj['hero-title']) {
+  if (homepageObj["hero-title"]) {
     Object.assign(sections[0].hero, {
-      title: homepageObj['hero-title'],
+      title: homepageObj["hero-title"],
     });
   }
 
-  if (homepageObj['hero-subtitle']) {
+  if (homepageObj["hero-subtitle"]) {
     Object.assign(sections[0].hero, {
-      subtitle: homepageObj['hero-subtitle'],
+      subtitle: homepageObj["hero-subtitle"],
     });
   }
 
-  if (homepageObj['hero-banner']) {
+  if (homepageObj["hero-banner"]) {
     Object.assign(sections[0].hero, {
-      background: homepageObj['hero-banner'],
+      background: homepageObj["hero-banner"],
     });
   }
 
@@ -311,9 +323,9 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
   }
 
   // key highlights
-  if (homepageObj['key-highlights']) {
+  if (homepageObj["key-highlights"]) {
     Object.assign(sections[0].hero, {
-      key_highlights: homepageObj['key-highlights'],
+      key_highlights: homepageObj["key-highlights"],
     });
 
     sections[0].hero.key_highlights.forEach((curr) => {
@@ -325,31 +337,36 @@ function homepageModifier(homepageObj, homepageFields, notificationContent) {
 
   const res = {
     sections,
-  }
+  };
 
-  if (notificationContent) res.notification = notificationContent
+  if (notificationContent) res.notification = notificationContent;
 
   return res;
 }
 
-function extractNotificationContent (indexMd) {
-  const { mdBody: indexMdContent } = utils.frontMatterParser(indexMd)
-  const indexMdContentArr = indexMdContent.split('-->')
+function extractNotificationContent(indexMd) {
+  const { mdBody: indexMdContent } = utils.frontMatterParser(indexMd);
+  const indexMdContentArr = indexMdContent.split("-->");
   // Assumption: that the substring `-->` is not used in the notification string
-  const parsedNotificationContent = indexMdContentArr.length > 1 ? indexMdContentArr[1] : indexMdContentArr[0]
-  return parsedNotificationContent
+  const parsedNotificationContent =
+    indexMdContentArr.length > 1 ? indexMdContentArr[1] : indexMdContentArr[0];
+  return parsedNotificationContent;
 }
 
 // modify index.md file, which requires homepageModifier
 function indexModifier(homepageFields, homepageObj, programmesObj, indexMd) {
   // extract notification data if any
-  const notificationContent = extractNotificationContent(indexMd)
+  const notificationContent = extractNotificationContent(indexMd);
 
   // update the homepage yml data
-  const newData = homepageModifier(homepageObj, homepageFields, notificationContent);
+  const newData = homepageModifier(
+    homepageObj,
+    homepageFields,
+    notificationContent
+  );
 
   // update the front matter
-  const isIndex = true
+  const isIndex = true;
   const res = utils.frontMatterInsert(indexMd, newData, isIndex);
 
   return res;
