@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --ext .js --ext .jsx --ignore-path .gitignore .",
     "lint-fix": "eslint --ignore-path .gitignore . --fix",
-    "amplify:migrate": "npx ts-node src/amplify-migration/amplifyMigrationScript.ts"
+    "amplify:migrate": "npx ts-node src/amplify-migration/amplifyMigrationScript.ts",
+    "github:list-repos": "npx ts-node src/utils/getGithubRepos.ts"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,7 @@
   "dependencies": {
     "@aws-sdk/client-amplify": "^3.282.0",
     "@octokit/request": "^5.2.1",
+    "@octokit/rest": "^19.0.7",
     "axios": "^0.21.1",
     "base-64": "^0.1.0",
     "bluebird": "^3.7.2",
