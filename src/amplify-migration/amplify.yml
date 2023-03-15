@@ -1,0 +1,15 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - bundle install
+    build:
+      commands:
+        - curl https://raw.githubusercontent.com/opengovsg/isomer-build/amplify/build.sh | bash
+  artifacts:
+    baseDirectory: _site
+    files:
+      - "**/*"
+  cache:
+    paths: []
