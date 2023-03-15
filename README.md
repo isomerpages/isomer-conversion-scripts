@@ -30,6 +30,6 @@ node migrationScript.js <repo name>
 
 1. Navigate to src/amplify-migration/list-of-repos.csv
 2. Populate the csv file with the desired values
-3. Run `npm run amplify:migrate` in the command line
+3. Run `npm run amplify:migrate -- -user-id=<user-id>` in the command line. If you wish to use another CSV file, run `npm run amplify:migrate -- -user-id=457 -repo-path=<path-to-csv>`
 4. Navigate to `src/amplify-migration/sqlcommands.txt`
 5. Copy over the appended commands in the file and run them on production DB

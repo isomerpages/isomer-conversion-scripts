@@ -26,12 +26,17 @@ interface AmplifyAppInfo {
   repoPath: string;
 }
 
-function readCsvFile(): Promise<[string, string][]> {
-  // read file list-of-repos.csv
-  const filePath = path.join(__dirname, "list-of-repos.csv");
+/**
+ * Reading CSV file
+ * @param filePath if undefined, list-of-repos.csv
+ *                 in the current directory will be used
+ * @returns list of repos and their human friendly names
+ */
+function readCsvFile(
+  filePath = path.join(__dirname, "list-of-repos.csv")
+): Promise<[string, string][]> {
   return new Promise((resolve, reject) => {
     const results: [string, string][] = [];
-
     fs.createReadStream(filePath)
       .pipe(csv())
       .on(
@@ -50,9 +55,8 @@ function readCsvFile(): Promise<[string, string][]> {
 }
 
 async function main() {
-  const listOfRepos: [string, string][] = await readCsvFile();
   const args = process.argv.slice(2);
-
+  console.log(args);
   const userIdString = args
     .find((arg) => arg.startsWith("-user-id="))
     ?.split("=")[1];
@@ -61,6 +65,11 @@ async function main() {
     return;
   }
   const userId = parseInt(userIdString);
+
+  const filePath = args
+    .find((arg) => arg.startsWith("-repo-path="))
+    ?.split("=")[1];
+  const listOfRepos: [string, string][] = await readCsvFile(filePath);
   listOfRepos.map(async ([repoName, name]) => {
     try {
       if (await isRepoEmpty(repoName)) {
