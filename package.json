@@ -22,7 +22,7 @@
   "dependencies": {
     "@aws-sdk/client-amplify": "^3.282.0",
     "@octokit/request": "^5.2.1",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "base-64": "^0.1.0",
     "bluebird": "^3.7.2",
     "btoa": "^1.2.1",
