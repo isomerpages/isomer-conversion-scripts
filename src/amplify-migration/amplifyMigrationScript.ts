@@ -380,8 +380,8 @@ async function generateSqlCommands(
   { name, repoName, appId }: AmplifyAppInfo,
   userId: number
 ) {
-  const sqlCommands = `INSERT INTO sites (name, api_token_name, site_status, job_status, creator_id)
-VALUES ('${name}', '', 'INITIALIZED', 'READY', '${userId}');
+  const sqlCommands = `INSERT INTO sites (name, site_status, job_status, creator_id)
+VALUES ('${name}', 'INITIALIZED', 'READY', '${userId}');
 INSERT INTO repos (name, url, created_at, updated_at, site_id)
 SELECT '${repoName}', 'https://github.com/isomerpages/${repoName}', NOW(), NOW(), id FROM sites WHERE name = '${name}';
 INSERT INTO deployments (production_url, staging_url, hosting_id, created_at, updated_at, site_id) 
