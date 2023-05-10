@@ -83,7 +83,13 @@ async function main() {
       }
       await migrateRepo(repoName, name, userId);
     } catch (e) {
-      console.error(`Error occurred for ${repoName}: ${e}`);
+      const message = (`Error occurred for ${repoName}: ${e}`)
+      console.error(message);
+      // append this to a file 
+      fs.appendFileSync(
+        path.join(__dirname, "repos-with-errors.txt"),
+        `${message} ` + os.EOL
+      );
     }
   });
 }
