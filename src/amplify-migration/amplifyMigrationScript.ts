@@ -9,7 +9,6 @@ import { errorMessage } from "./errorMessage";
 
 import simpleGit from "simple-git";
 import fs from "fs";
-import fsPromises from "node:fs/promises";
 import glob from "glob";
 import path from "path";
 import csv from "csv-parser";
