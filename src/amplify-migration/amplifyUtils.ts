@@ -1,16 +1,33 @@
-const {
+import {
   AmplifyClient,
   CreateAppCommand,
   CreateBranchCommand,
   StartJobCommand,
-} = require("@aws-sdk/client-amplify");
-const path = require("path");
-const fs = require("fs");
+} from "@aws-sdk/client-amplify";
+import path from "path";
+import fs from "fs";
+
+const accessKey = process.env.AWS_ACCESS_KEY_ID;
+const secretKey = process.env.AWS_SECRET_ACCESS_KEY;
+
+if (!accessKey || !secretKey) {
+  throw new Error("Credentials are not defined");
+}
+
 const awsClient = new AmplifyClient({
   region: "ap-southeast-1",
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  credentials: {
+    accessKeyId: accessKey,
+    secretAccessKey: secretKey,
+  },
 });
+
+export interface AmplifyAppInfo {
+  appId: string;
+  repoName: string;
+  name: string;
+  repoPath: string;
+}
 
 export async function readBuildSpec() {
   const buildSpecPath = path.join(__dirname, "amplify.yml");
@@ -50,7 +67,10 @@ export async function startReleaseJob({ appId }: AmplifyAppInfo) {
   await awsClient.send(new StartJobCommand(params));
 }
 
-export async function createAmplifyApp(repo_name: string, build_spec: string) {
+export async function createAmplifyApp(
+  repo_name: string,
+  build_spec: string
+): Promise<string> {
   const params = {
     accessToken: process.env.GITHUB_ACCESS_TOKEN,
     name: repo_name,
@@ -64,12 +84,14 @@ export async function createAmplifyApp(repo_name: string, build_spec: string) {
         source: "/<*>",
         target: "/404.html",
         status: "404",
-        condition: null,
       },
     ],
   };
 
-  const command = await new CreateAppCommand(params);
+  const command = new CreateAppCommand(params);
   const { app } = await awsClient.send(command);
+  if (!app || !app.appId) {
+    throw new Error("Amplify App was not created");
+  }
   return app.appId;
 }
