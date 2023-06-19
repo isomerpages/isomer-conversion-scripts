@@ -308,7 +308,6 @@ export async function changeFileContent({
     : fileContent;
   // iterate over all the normalised urls and replace them in the file content
   normalisedUrls.forEach((url) => {
-    console.log("normalised url", url);
     assert(url.endsWith("/"));
     fileContent = fileContent.replace(url, url.slice(0, -1));
   });

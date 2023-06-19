@@ -60,7 +60,6 @@ export async function modifyTagAttribute({
         );
       a.href = fileContent;
       if (a.href !== fileContent) {
-        console.log("file upload path changed", a.href, fileContent);
         // NOTE: JSDOM normalises href to add the trailing slash, which breaks our files url
         // so we need to manually remove the trailing slash
         normalisedUrls.add(a.href);
@@ -93,7 +92,6 @@ export async function modifyTagAttribute({
         );
       img.src = fileContent;
       if (img.src !== fileContent) {
-        console.log("file upload path changed", img.src, fileContent);
         // NOTE: JSDOM normalises href to add the trailing slash, which breaks our files url
         // so we need to manually remove the trailing slash
         normalisedUrls.add(img.src);
@@ -140,7 +138,6 @@ export async function updateFilesUploadsPath(
   setOfAllDocumentsPath: Set<string>,
   currentRepoName: string
 ): Promise<{ fileContent: string; hasChanged: boolean }> {
-  console.log({ fileContent });
   const folderRegex = /(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//g;
   const matches = fileContent.match(folderRegex);
   let hasChanged = false;
