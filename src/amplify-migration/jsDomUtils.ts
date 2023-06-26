@@ -13,24 +13,23 @@ export async function modifyTagAttribute({
   dom,
   tagAttribute: { tagName, attribute },
   changedPermalinks,
-  hasFileChanged,
+  fileContent,
   setOfAllDocumentsPath,
-  normalisedUrls,
   currentRepoName,
 }: {
   dom: JSDOM;
   tagAttribute: TagAttribute<"a" | "img">;
   changedPermalinks: { [oldPermalink: string]: string };
-  hasFileChanged: boolean;
+  fileContent:string
   setOfAllDocumentsPath: Set<string>;
   normalisedUrls: Set<string>;
   currentRepoName: string;
 }): Promise<{
-  hasFileChanged: boolean;
-  normalisedUrls: Set<string>;
+  fileContent: string;
   dom: JSDOM;
   changedPermalinks: { [oldPermalink: string]: string };
 }> {
+
   for (const tag of dom.window.document.querySelectorAll(tagName)) {
     // replace permalinks with lowercase and in changedPermalinks
     if (attribute === "href") {
@@ -49,22 +48,22 @@ export async function modifyTagAttribute({
           rawPermalink,
           changedPermalinks[rawPermalink]
         );
-        hasFileChanged = true;
+        fileContent = fileContent.replace(
+          rawPermalink,
+          changedPermalinks[rawPermalink]
+        );
       }
 
-      const { fileContent, hasChanged: fileUploadsPathChanged } =
+      const { fileContent: href } =
         await updateFilesUploadsPath(
           a.href,
           setOfAllDocumentsPath,
           currentRepoName
         );
-      a.href = fileContent;
-      if (a.href !== fileContent) {
-        // NOTE: JSDOM normalises href to add the trailing slash, which breaks our files url
-        // so we need to manually remove the trailing slash
-        normalisedUrls.add(a.href);
+      if (a.href !== href) {
+        fileContent.replace(a.href, href)
       }
-      hasFileChanged = hasFileChanged || fileUploadsPathChanged;
+
     } else if (attribute === "src") {
       /**
        * Ideally this code should be const img = tag as HTMLImageElement;
@@ -81,25 +80,20 @@ export async function modifyTagAttribute({
           rawPermalink,
           changedPermalinks[rawPermalink]
         );
-        hasFileChanged = true;
       }
 
-      const { fileContent, hasChanged: fileUploadsPathChanged } =
+      const { fileContent:src } =
         await updateFilesUploadsPath(
           img.src,
           setOfAllDocumentsPath,
           currentRepoName
         );
-      img.src = fileContent;
-      if (img.src !== fileContent) {
-        // NOTE: JSDOM normalises href to add the trailing slash, which breaks our files url
-        // so we need to manually remove the trailing slash
-        normalisedUrls.add(img.src);
+      if (img.src !== src) {
+        fileContent.replace(img.src, src)
       }
-      hasFileChanged = hasFileChanged || fileUploadsPathChanged;
     }
   }
-  return { hasFileChanged, normalisedUrls, dom, changedPermalinks };
+  return { fileContent, dom, changedPermalinks };
 }
 /**
  * Requirements:
@@ -137,10 +131,9 @@ export async function updateFilesUploadsPath(
   fileContent: string,
   setOfAllDocumentsPath: Set<string>,
   currentRepoName: string
-): Promise<{ fileContent: string; hasChanged: boolean }> {
-  const folderRegex = /(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//g;
-  const matches = fileContent.match(folderRegex);
-  let hasChanged = false;
+): Promise<{ fileContent: string }> {
+  const fileRegexWithTrailingSlash = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//g;
+  const matches = fileContent.match(fileRegexWithTrailingSlash);
   if (matches) {
     matches.forEach(async (match) => {
       assert(match.endsWith("/")); // sanity check that should have been guaranteed by regex
@@ -150,7 +143,33 @@ export async function updateFilesUploadsPath(
         // this is needed since setOfAllDocumentsPath has leading slash
         newFilePath = "/" + newFilePath;
       }
-      if (!setOfAllDocumentsPath.has(newFilePath)) {
+      
+    });
+  }
+  // check that files actually exist, else change file names (not folders)
+  const fileRegex = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/g;
+  const fileMatches = fileContent.match(fileRegex);
+  if (fileMatches) {
+    fileMatches.forEach(async (match) => {
+      let doesFileExist = false
+      for (const path of setOfAllDocumentsPath) {
+        if (path === match || decodeURIComponent(match) === path) {
+          doesFileExist = true;
+          break;
+        }
+      }
+      if (!doesFileExist) {
+        // see if we can self-recover from this by modifying the permalink directly
+        for (const path of setOfAllDocumentsPath) {
+          const isRecoverable = path.toLowerCase() === match.toLowerCase() 
+          || path === decodeURIComponent(match.toLowerCase())
+          if (isRecoverable)
+           {
+            fileContent = fileContent.replace(match, path);
+            return;
+          }
+        }
+      
         // log this in some file for manual checking after the migration
         const errorMessage: errorMessage = {
           message: `File ${fileContent} does not exist in the repo`,
@@ -162,7 +181,6 @@ export async function updateFilesUploadsPath(
         );
       }
     });
-    hasChanged = true;
   }
-  return { fileContent, hasChanged };
+  return { fileContent };
 }

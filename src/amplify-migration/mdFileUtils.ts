@@ -16,16 +16,16 @@ export async function changePermalinksInMdFile({
   currentRepoName: string;
 }) {
   let fileContent = await fs.promises.readFile(filePath, "utf-8");
-  let fileChanged = false;
+  const originalFileContent = fileContent;
 
-  ({ fileContent, fileChanged } = await changeFileContent({
+  ({ fileContent } = await changeFileContent({
     fileContent,
     changedPermalinks,
     setOfAllDocumentsPath,
     currentRepoName,
   }));
 
-  if (fileChanged) {
+  if (originalFileContent !== fileContent) {
     await fs.promises.writeFile(filePath, fileContent, "utf-8");
     await simpleGit(repoPath).add(filePath);
   }

@@ -270,8 +270,6 @@ export async function changeFileContent({
   setOfAllDocumentsPath: Set<string>;
   currentRepoName: string;
 }) {
-  let hasFileChanged = false;
-
   // two different permalink patterns to take care of
   // 1. href="original_permalink"
   // 2. [click here](original_permalink)
@@ -281,38 +279,27 @@ export async function changeFileContent({
   let dom: JSDOM = new JSDOM(fileContent);
   let normalisedUrls = new Set<string>();
 
-  ({ normalisedUrls, hasFileChanged, changedPermalinks, dom } =
+  ({ changedPermalinks, dom, fileContent } =
     await modifyTagAttribute({
       dom,
       changedPermalinks,
       tagAttribute: { tagName: "a", attribute: "href" },
-      hasFileChanged,
+      fileContent,
       setOfAllDocumentsPath,
       normalisedUrls,
       currentRepoName,
     }));
 
-  ({ normalisedUrls, hasFileChanged, changedPermalinks, dom } =
+  ({ changedPermalinks, dom, fileContent } =
     await modifyTagAttribute({
       dom,
       changedPermalinks,
       tagAttribute: { tagName: "img", attribute: "src" },
-      hasFileChanged,
+      fileContent,
       setOfAllDocumentsPath,
       normalisedUrls,
       currentRepoName,
     }));
-
-  fileContent = hasFileChanged
-    ? dom.window.document.body.innerHTML
-    : fileContent;
-  // iterate over all the normalised urls and replace them in the file content
-  normalisedUrls.forEach((url) => {
-    assert(url.endsWith("/"));
-    fileContent = fileContent.replace(url, url.slice(0, -1));
-  });
-
-  fileContent = fileContent.replace(/&amp;/g, "&"); // edge case where JSDOM converts & to &amp;
 
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
@@ -323,26 +310,23 @@ export async function changeFileContent({
       const newPermalink = originalPermalink.toLocaleLowerCase();
       const newMatch = match.replace(originalPermalink, newPermalink);
       fileContent = fileContent.replace(match, newMatch);
-      hasFileChanged = true;
     }
 
-    const { fileContent: filepathContent, hasChanged: fileUploadsPathChanged } =
+    const { fileContent: filepathContent } =
       await updateFilesUploadsPath(
         match,
         setOfAllDocumentsPath,
         currentRepoName
       );
     fileContent = fileContent.replace(match, filepathContent);
-    hasFileChanged = hasFileChanged || fileUploadsPathChanged;
   }
 
-  return { fileContent, fileChanged: hasFileChanged };
+  return { fileContent, };
 }
 
 async function getAllDocumentsPath(filePath: string): Promise<Set<string>> {
   const filePaths = new Set<string>();
-  const rootDir = path.join(filePath, "files");
-
+  
   async function traverseDirectory(dir: string) {
     const files = await fs.promises.readdir(dir);
     for (const file of files) {
@@ -355,8 +339,11 @@ async function getAllDocumentsPath(filePath: string): Promise<Set<string>> {
       }
     }
   }
-
-  await traverseDirectory(rootDir);
+  const filesRootDir = path.join(filePath, "files");
+  await traverseDirectory(filesRootDir);
+  const imagesRootDir = path.join(filePath, "images");
+  await traverseDirectory(imagesRootDir);
+  
   return filePaths;
 }
 
