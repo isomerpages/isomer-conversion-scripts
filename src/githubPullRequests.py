@@ -31,9 +31,12 @@ non_agency_repos = [
     "isomer-redirection"
 ]
 
+all_repos = org.get_repos()
+
+print(f'Number of repos in org: {all_repos.totalCount}')
 
 # Paginate through all the repositories in the organization
-for repo in org.get_repos():
+for repo in all_repos:
     if repo in non_agency_repos:
         continue
     # Get all the closed pull requests for the past 3 months
@@ -46,6 +49,7 @@ for repo in org.get_repos():
             # If so, increment the total counter
             total_closed_prs += 1
             if total_closed_prs % 100 == 0:
+                # printing out every 100th pr closed in case script crashes
                 print(
                     f'Pull request number #{total_closed_prs} was closed on {pr.closed_at}')
 
