@@ -39,6 +39,9 @@ print(f'Number of repos in org: {all_repos.totalCount}')
 for repo in all_repos:
     if repo in non_agency_repos:
         continue
+    # check if repo name contains the word 'test'
+    if 'test' in repo.name:
+        continue
     # Get all the closed pull requests for the past 3 months
     closed_prs = repo.get_pulls(
         state='closed', sort='updated', direction='desc', base='master')
