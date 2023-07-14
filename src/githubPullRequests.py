@@ -22,26 +22,28 @@ three_months_ago = today - timedelta(days=90)
 # Initialize a counter for the total number of closed pull requests
 total_closed_prs = 0
 non_agency_repos = [
-    "isomerpages/isomerpages-template",
-    "isomerpages/isomercms-frontend",
-    "isomerpages/isomercms-backend",
-    "isomerpages/isomer-infra",
-    "isomerpages/isomer-tooling",
-    "isomerpages/site-creation-backend",
-    "isomerpages/isomer-redirection"
+    "isomerpages-template",
+    "isomercms-frontend",
+    "isomercms-backend",
+    "isomer-infra",
+    "isomer-tooling",
+    "site-creation-backend",
+    "isomer-redirection"
 ]
 
-all_repos = org.get_repos()
-
-print(f'Number of repos in org: {all_repos.totalCount}')
+num_of_repos = 0
 
 # Paginate through all the repositories in the organization
-for repo in all_repos:
-    if repo in non_agency_repos:
+for repo in org.get_repos():
+    if repo.name in non_agency_repos:
+        print(f'Skipping repo {repo.name}')
         continue
     # check if repo name contains the word 'test'
     if 'test' in repo.name:
+        print(f'Skipping repo {repo.name}')
         continue
+    continue
+    num_of_repos += 1
     # Get all the closed pull requests for the past 3 months
     closed_prs = repo.get_pulls(
         state='closed', sort='updated', direction='desc', base='master')
@@ -59,3 +61,4 @@ for repo in all_repos:
 
 # Print the total number of closed pull requests for the past 3 months
 print(f'Total closed pull requests for the past 3 months: {total_closed_prs}')
+print(f'Total number of repos: {num_of_repos}')
