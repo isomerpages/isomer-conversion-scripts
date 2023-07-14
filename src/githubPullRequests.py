@@ -27,8 +27,8 @@ non_agency_repos = [
     "isomerpages/isomercms-backend",
     "isomerpages/isomer-infra",
     "isomerpages/isomer-tooling",
-    "site-creation-backend",
-    "isomer-redirection"
+    "isomerpages/site-creation-backend",
+    "isomerpages/isomer-redirection"
 ]
 
 all_repos = org.get_repos()
