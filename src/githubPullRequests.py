@@ -42,7 +42,6 @@ for repo in org.get_repos():
     if 'test' in repo.name:
         print(f'Skipping repo {repo.name}')
         continue
-    continue
     num_of_repos += 1
     # Get all the closed pull requests for the past 3 months
     closed_prs = repo.get_pulls(
