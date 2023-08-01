@@ -61,7 +61,7 @@ export async function modifyTagAttribute({
           currentRepoName
         );
       if (a.href !== href) {
-        fileContent.replace(a.href, href)
+        fileContent = fileContent.replace(a.href, href)
       }
 
     } else if (attribute === "src") {
@@ -89,7 +89,7 @@ export async function modifyTagAttribute({
           currentRepoName
         );
       if (img.src !== src) {
-        fileContent.replace(img.src, src)
+        fileContent = fileContent.replace(img.src, src)
       }
     }
   }
