@@ -132,7 +132,7 @@ export async function updateFilesUploadsPath(
   setOfAllDocumentsPath: Set<string>,
   currentRepoName: string
 ): Promise<{ fileContent: string }> {
-  const fileRegexWithTrailingSlash = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//g;
+  const fileRegexWithTrailingSlash = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//gi;
   const matches = fileContent.match(fileRegexWithTrailingSlash);
   if (matches) {
     matches.forEach(async (match) => {
@@ -147,7 +147,7 @@ export async function updateFilesUploadsPath(
     });
   }
   // check that files actually exist, else change file names (not folders)
-  const fileRegex = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/g;
+  const fileRegex = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/gi;
   const fileMatches = fileContent.match(fileRegex);
   if (fileMatches) {
     fileMatches.forEach(async (match) => {
