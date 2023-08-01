@@ -108,10 +108,10 @@ export async function modifyTagAttribute({
 export function getRawPermalink(permalink: string) {
   let trimmedPermalink = permalink.trim();
   if (trimmedPermalink.startsWith(`permalink: `)) {
-    trimmedPermalink = permalink.trim().slice(11);
+    trimmedPermalink = trimmedPermalink.slice(11);
   }
   if (trimmedPermalink.startsWith(`url: `)) {
-    trimmedPermalink = permalink.trim().slice(5);
+    trimmedPermalink = trimmedPermalink.slice(5);
   }
   if (trimmedPermalink.startsWith(`/`)) {
     trimmedPermalink = trimmedPermalink.slice(1);
