@@ -275,7 +275,6 @@ export async function changeFileContent({
   // 2. [click here](original_permalink)
   // 1 is solved using JSDOM, 2 is solved using regex
 
-  const markdownRegex = /\[(.*?)\]\((.*?)\)/g;
   let dom: JSDOM = new JSDOM(fileContent);
   let normalisedUrls = new Set<string>();
 
@@ -300,7 +299,8 @@ export async function changeFileContent({
       normalisedUrls,
       currentRepoName,
     }));
-
+    
+  const markdownRegex = /\[(.*?)\]\((.*?)\)/g;
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
   for (const match of markdownRelativeUrlMatches) {
@@ -324,7 +324,7 @@ export async function changeFileContent({
   return { fileContent, };
 }
 
-async function getAllDocumentsPath(filePath: string): Promise<Set<string>> {
+async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
   const filePaths = new Set<string>();
   
   async function traverseDirectory(dir: string) {
@@ -335,13 +335,13 @@ async function getAllDocumentsPath(filePath: string): Promise<Set<string>> {
       if (stat.isDirectory()) {
         await traverseDirectory(innerFilePath);
       } else {
-        filePaths.add(innerFilePath.slice(filePath.length));
+        filePaths.add(innerFilePath.slice(dirPath.length));
       }
     }
   }
-  const filesRootDir = path.join(filePath, "files");
+  const filesRootDir = path.join(dirPath, "files");
   await traverseDirectory(filesRootDir);
-  const imagesRootDir = path.join(filePath, "images");
+  const imagesRootDir = path.join(dirPath, "images");
   await traverseDirectory(imagesRootDir);
   
   return filePaths;
