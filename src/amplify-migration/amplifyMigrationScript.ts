@@ -335,9 +335,17 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
       const innerFilePath = path.join(dir, file);
       const stat = await fs.promises.stat(innerFilePath);
       if (stat.isDirectory()) {
-        await traverseDirectory(innerFilePath);
+        // Convert the directory name to lowercase
+        const lowercaseDirName = file.toLowerCase();
+        const lowercaseDirPath = path.join(dir, lowercaseDirName);
+        await fs.promises.rename(innerFilePath, lowercaseDirPath);
+        await traverseDirectory(lowercaseDirPath);
       } else {
-        filePaths.add(innerFilePath.slice(dirPath.length));
+        // Convert the file name to lowercase
+        const lowercaseFileName = file.toLowerCase();
+        const lowercaseFilePath = path.join(dir, lowercaseFileName);
+        await fs.promises.rename(innerFilePath, lowercaseFilePath);
+        filePaths.add(lowercaseFilePath.slice(dirPath.length));
       }
     }
   }
