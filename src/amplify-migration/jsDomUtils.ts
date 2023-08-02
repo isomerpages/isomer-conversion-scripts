@@ -135,22 +135,21 @@ export async function updateFilesUploadsPath(
   const fileRegexWithTrailingSlash = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//gi;
   const matches = fileContent.match(fileRegexWithTrailingSlash);
   if (matches) {
-    matches.forEach(async (match) => {
+    for (const match of matches) {
       assert(match.endsWith("/")); // sanity check that should have been guaranteed by regex
       let newFilePath = match.slice(0, -1);
-      fileContent = fileContent.replace(match, newFilePath);
       if (!newFilePath.startsWith("/")) {
         // this is needed since setOfAllDocumentsPath has leading slash
         newFilePath = "/" + newFilePath;
       }
-      
-    });
+      fileContent = fileContent.replace(match, newFilePath);
+    }
   }
   // check that files actually exist, else change file names (not folders)
   const fileRegex = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/gi;
   const fileMatches = fileContent.match(fileRegex);
   if (fileMatches) {
-    fileMatches.forEach(async (match) => {
+    for (const match of fileMatches) {
       let doesFileExist = false
       for (const path of setOfAllDocumentsPath) {
         if (path === match || decodeURIComponent(match) === path) {
@@ -166,7 +165,7 @@ export async function updateFilesUploadsPath(
           if (isRecoverable)
            {
             fileContent = fileContent.replace(match, path);
-            return;
+            break;
           }
         }
       
@@ -180,7 +179,7 @@ export async function updateFilesUploadsPath(
           `${errorMessage.repoName}: ${errorMessage.message} ` + os.EOL
         );
       }
-    });
+    }
   }
   return { fileContent };
 }
