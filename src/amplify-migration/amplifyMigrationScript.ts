@@ -170,9 +170,9 @@ async function modifyPermalinks({
       let permalinkValue = permalinkLineTrimmed
         .replace(`permalink:`, "")
         .trim()
-        .replace(/^"/g, "")
+        .replace(/^"/, "")
         .replace(/"$/, "")
-        .replace(/^'/g, "")
+        .replace(/^'/, "")
         .replace(/'$/, "");
       permalinkLineTrimmed = `permalink: ${permalinkValue}`;
 
