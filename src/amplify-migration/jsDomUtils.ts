@@ -136,12 +136,14 @@ export async function updateFilesUploadsPath(
   const matches = fileContent.match(fileRegexWithTrailingSlash);
   if (matches) {
     for (const match of matches) {
-      assert(match.endsWith("/")); // sanity check that should have been guaranteed by regex
+      
+      // sanity checks that should have been already guaranteed by regex
+      assert(match.endsWith("/")); 
+      assert(match.startsWith("/")); 
+
       let newFilePath = match.slice(0, -1);
-      if (!newFilePath.startsWith("/")) {
-        // this is needed since setOfAllDocumentsPath has leading slash
-        newFilePath = "/" + newFilePath;
-      }
+      
+      newFilePath = newFilePath.toLowerCase(); 
       fileContent = fileContent.replace(match, newFilePath);
     }
   }
@@ -158,16 +160,6 @@ export async function updateFilesUploadsPath(
         }
       }
       if (!doesFileExist) {
-        // see if we can self-recover from this by modifying the permalink directly
-        for (const path of setOfAllDocumentsPath) {
-          const isRecoverable = path.toLowerCase() === match.toLowerCase() 
-          || path === decodeURIComponent(match.toLowerCase())
-          if (isRecoverable)
-           {
-            fileContent = fileContent.replace(match, path);
-            break;
-          }
-        }
       
         // log this in some file for manual checking after the migration
         const errorMessage: errorMessage = {
