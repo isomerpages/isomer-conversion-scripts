@@ -306,21 +306,22 @@ export async function changeFileContent({
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
   for (const match of markdownRelativeUrlMatches) {
-    let originalPermalink = match.slice(match.indexOf("(") + 1, -1);
-    originalPermalink = getRawPermalink(originalPermalink);
+    const url = match.slice(match.indexOf("](") + 2, -1);
+    let originalPermalink = getRawPermalink(url);
     if (changedPermalinks[originalPermalink]) {
-      const newPermalink = originalPermalink.toLocaleLowerCase();
+      const newPermalink = originalPermalink.toLowerCase();
       const newMatch = match.replace(originalPermalink, newPermalink);
       fileContent = fileContent.replace(match, newMatch);
     }
 
+  
     const { fileContent: filepathContent } =
       await updateFilesUploadsPath(
-        match,
+        url,
         setOfAllDocumentsPath,
         currentRepoName
       );
-    fileContent = fileContent.replace(match, filepathContent);
+    fileContent = fileContent.replace(url, filepathContent);
   }
 
   return { fileContent, };
