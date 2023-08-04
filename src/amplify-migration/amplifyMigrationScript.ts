@@ -170,10 +170,10 @@ async function modifyPermalinks({
       let permalinkValue = permalinkLineTrimmed
         .replace(`permalink:`, "")
         .trim()
-        .replace(/^"/, "")
-        .replace(/"$/, "")
-        .replace(/^'/, "")
-        .replace(/'$/, "");
+        .replace(/^"+/, "")
+        .replace(/"+$/, "")
+        .replace(/^'+/, "")
+        .replace(/'+$/, "");
       permalinkLineTrimmed = `permalink: ${permalinkValue}`;
 
       // NOTE: this is to allow backward compatibility with existing netlify sites
