@@ -148,7 +148,7 @@ async function modifyPermalinks({
   repoPath: string;
   repoName: string;
 }) {
-  const mdFiles: string[] = await glob("**/*.md", { cwd: repoPath });
+  const mdFiles: string[] = await glob("**/*.md", { cwd: repoPath, ignore: "_site/**" });
   // dictionary  of changed permalinks
   const changedPermalinks: { [key: string]: string } = {};
   // NOTE: do not use map here, as we want to wait for each file to be processed
