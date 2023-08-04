@@ -132,7 +132,13 @@ export async function updateFilesUploadsPath(
   setOfAllDocumentsPath: Set<string>,
   currentRepoName: string
 ): Promise<{ fileContent: string }> {
-  const fileRegexWithTrailingSlash = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//gi;
+
+  
+   /** 
+    * NOTE: We don't want to change URLs of external links, eg https://www.google.com
+    * We also want to capture relative links, eg ../files/abc.pdf
+    */ 
+  const fileRegexWithTrailingSlash = /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//gi;
   const matches = fileContent.match(fileRegexWithTrailingSlash);
   if (matches) {
     for (const match of matches) {
@@ -142,19 +148,24 @@ export async function updateFilesUploadsPath(
       assert(match.startsWith("/")); 
 
       let newFilePath = match.slice(0, -1);
-      
-      newFilePath = newFilePath.toLowerCase(); 
       fileContent = fileContent.replace(match, newFilePath);
     }
   }
-  // check that files actually exist, else change file names (not folders)
-  const fileRegex = /\/(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/gi;
+
+  /** 
+    * NOTE: We don't want to change URLs of external links, eg https://www.google.com
+    * We also want to capture relative links, eg ../files/abc.pdf
+    * WE modify them to be small casing, then report it
+    */ 
+  const fileRegex = /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/gi;
   const fileMatches = fileContent.match(fileRegex);
   if (fileMatches) {
     for (const match of fileMatches) {
+      const lowerCaseMatch = match.toLowerCase();
+      fileContent = fileContent.replace(match, lowerCaseMatch);
       let doesFileExist = false
       for (const path of setOfAllDocumentsPath) {
-        if (path === match || decodeURIComponent(match) === path) {
+        if (path === lowerCaseMatch || decodeURIComponent(lowerCaseMatch) === path) {
           doesFileExist = true;
           break;
         }
