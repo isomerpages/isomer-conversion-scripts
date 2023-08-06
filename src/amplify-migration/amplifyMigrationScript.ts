@@ -215,6 +215,8 @@ async function changePermalinksReference(
   currentRepoName: string
 ) {
   const setOfAllDocumentsPath = await getAllDocumentsPath(repoPath);
+  
+  await simpleGit(repoPath).commit("feat(Amplify-Migration): Update files to lowercase");
 
   // NOTE: do not use map here, as we want to wait for each file to be processed
   // due to the existence of .git/index.lock files that prevent multiple git commands from running concurrently
@@ -331,22 +333,43 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
   const filePaths = new Set<string>();
   
   async function traverseDirectory(dir: string) {
+    console.log(`traversing ${dir}`);
     const files = await fs.promises.readdir(dir);
+    console.log(`files: ${files}`);
     for (const file of files) {
       const innerFilePath = path.join(dir, file);
+
+      // This solves the edge case of /files/PATH/blah.pdf -> files/path/blah.pdf 
+      const lowercaseInnerFilePath = dirPath + innerFilePath.replace(dirPath, "").toLowerCase();
       const stat = await fs.promises.stat(innerFilePath);
       if (stat.isDirectory()) {
+
+        await traverseDirectory(path.join(dir,file));
+
         // Convert the directory name to lowercase
         const lowercaseDirName = file.toLowerCase();
         const lowercaseDirPath = path.join(dir, lowercaseDirName);
-        await fs.promises.rename(innerFilePath, lowercaseDirPath);
-        await traverseDirectory(lowercaseDirPath);
+        if (innerFilePath !== lowercaseDirPath) {
+          await fs.promises.rename(innerFilePath, lowercaseDirPath);
+        }
       } else {
         // Convert the file name to lowercase
         const lowercaseFileName = file.toLowerCase();
         const lowercaseFilePath = path.join(dir, lowercaseFileName);
-        await fs.promises.rename(innerFilePath, lowercaseFilePath);
-        filePaths.add(lowercaseFilePath.slice(dirPath.length));
+        if (lowercaseInnerFilePath !== lowercaseFilePath) {
+          /**
+           * We need to force mv -f at the file level to commit case changes for files 
+           * in github. 
+           * See https://stackoverflow.com/questions/17683458/how-do-i-commit-case-sensitive-only-filename-changes-in-git
+           * 
+           * NOTE: We are making a raw call here since simple git 
+           * mv func is not flexible enough to have the '-f' option
+           */
+          console.log(`Renamed ${innerFilePath} to ${lowercaseFilePath}`)
+          await simpleGit(dirPath).raw(["mv", "-f", innerFilePath, lowercaseInnerFilePath]);
+          // await fs.promises.rename(innerFilePath, lowercaseInnerFilePath);
+        }
+        filePaths.add(lowercaseInnerFilePath.slice(dirPath.length));
       }
     }
   }
