@@ -343,9 +343,7 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
       const lowercaseInnerFilePath = dirPath + innerFilePath.replace(dirPath, "").toLowerCase();
       const stat = await fs.promises.stat(innerFilePath);
       if (stat.isDirectory()) {
-
         await traverseDirectory(path.join(dir,file));
-
         // Convert the directory name to lowercase
         const lowercaseDirName = file.toLowerCase();
         const lowercaseDirPath = path.join(dir, lowercaseDirName);
@@ -365,7 +363,6 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
            * NOTE: We are making a raw call here since simple git 
            * mv func is not flexible enough to have the '-f' option
            */
-          console.log(`Renamed ${innerFilePath} to ${lowercaseFilePath}`)
           await simpleGit(dirPath).raw(["mv", "-f", innerFilePath, lowercaseInnerFilePath]);
           // await fs.promises.rename(innerFilePath, lowercaseInnerFilePath);
         }
