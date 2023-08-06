@@ -333,14 +333,9 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
   const filePaths = new Set<string>();
   
   async function traverseDirectory(dir: string) {
-    console.log(`traversing ${dir}`);
     const files = await fs.promises.readdir(dir);
-    console.log(`files: ${files}`);
     for (const file of files) {
       const innerFilePath = path.join(dir, file);
-
-      // This solves the edge case of /files/PATH/blah.pdf -> files/path/blah.pdf 
-      const lowercaseInnerFilePath = dirPath + innerFilePath.replace(dirPath, "").toLowerCase();
       const stat = await fs.promises.stat(innerFilePath);
       if (stat.isDirectory()) {
         await traverseDirectory(path.join(dir,file));
@@ -351,10 +346,10 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
           await fs.promises.rename(innerFilePath, lowercaseDirPath);
         }
       } else {
-        // Convert the file name to lowercase
-        const lowercaseFileName = file.toLowerCase();
-        const lowercaseFilePath = path.join(dir, lowercaseFileName);
-        if (lowercaseInnerFilePath !== lowercaseFilePath) {
+        // This converts /files/PATH/blah.pdf -> files/path/blah.pdf 
+        // and files/path/BLAH.pdf -> files/path/blah.pdf
+        const lowercaseInnerFilePath = dirPath + innerFilePath.replace(dirPath, "").toLowerCase();
+        if (lowercaseInnerFilePath !== innerFilePath) {
           /**
            * We need to force mv -f at the file level to commit case changes for files 
            * in github. 
@@ -364,7 +359,8 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
            * mv func is not flexible enough to have the '-f' option
            */
           await simpleGit(dirPath).raw(["mv", "-f", innerFilePath, lowercaseInnerFilePath]);
-          // await fs.promises.rename(innerFilePath, lowercaseInnerFilePath);
+          const isFileLowercase = file === file.toLowerCase();
+          if (!isFileLowercase) await fs.promises.rename(innerFilePath, path.join(dir, file.toLowerCase())); 
         }
         filePaths.add(lowercaseInnerFilePath.slice(dirPath.length));
       }
