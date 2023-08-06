@@ -121,7 +121,35 @@ async function migrateRepo(repoName: string, name: string, userId: number) {
   await modifyRepo({ repoName, appId, repoPath, name });
   await buildLocally(repoPath);
   await pushChangesToRemote(amplifyAppInfo);
+  await generateRedirectsRules(amplifyAppInfo);
   await generateSqlCommands(amplifyAppInfo, userId);
+}
+
+async function generateRedirectsRules({ repoName, repoPath }: AmplifyAppInfo) {
+  const redirectsPath = path.join(repoPath,'_redirects')
+  if (fs.existsSync(redirectsPath)) {
+    const redirects = fs.readFileSync(redirectsPath, 'utf-8');
+    const lines = redirects.split('\n').filter(line => line.trim() !== '');
+    const json = lines.map(line => {
+      const [source, target] = line.split(" ");
+      return {
+        source,
+        target,
+        status: "301",
+        condition: null,
+      };
+    });
+    json.push({
+      source: '/<*>',
+      target: '/404.html',
+      status: '404',
+      condition: null,
+    });
+    fs.writeFileSync(path.join(__dirname,`redirects_${repoName}.json`), JSON.stringify(json, null, 2));
+    console.log('Redirects file converted to JSON');
+  } else {
+    console.log('_redirects file does not exist');
+  }
 }
 
 /**
