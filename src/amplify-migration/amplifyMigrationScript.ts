@@ -377,7 +377,7 @@ export async function changeFileContent({
   const yamlContents = yamlDocument?.contents as YAML.YAMLMap.Parsed;
   
   (yamlContents.items ?? []).map(async (item: any) => {
-    if (ymlKeys.includes(item.key.value)) {
+    if (item.value.value && ymlKeys.includes(item.key.value)) {
       const originalPermalink = getRawPermalink(item.value.value);
       if (changedPermalinks[originalPermalink]) {
         const newPermalink = originalPermalink.toLowerCase();
@@ -391,7 +391,7 @@ export async function changeFileContent({
       } else {
         // log this in some file for manual checking after the migration
         const errorMessage: errorMessage = {
-          message: `File ${fileContent} does not exist in the repo`,
+          message: `File ${filePath} does not exist in the repo`,
           repoName: currentRepoName,
         };
         await fs.promises.appendFile(
