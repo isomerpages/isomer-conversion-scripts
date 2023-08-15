@@ -1,30 +1,35 @@
-const simpleGit = require("simple-git");
-const fs = require("fs");
-const glob = require("glob");
-const path = require("path");
-const csv = require("csv-parser");
-const os = require("os");
-const axios = require("axios");
-const { Octokit } = require("@octokit/core");
+import {
+  AmplifyAppInfo,
+  createAmplifyApp,
+  createAmplifyBranches,
+  readBuildSpec,
+  startReleaseJob,
+} from "./amplifyUtils";
+import { errorMessage } from "./errorMessage";
+
+import simpleGit from "simple-git";
+import fs from "fs";
+import glob from "glob";
+import path from "path";
+import csv from "csv-parser";
+import os from "os";
+import assert from "assert";
+import { execSync } from "child_process";
 require("dotenv").config();
 
-const { JSDOM } = require("jsdom");
-const {
-  createAmplifyBranches,
-  startReleaseJob,
-  createAmplifyApp,
-  readBuildSpec,
-} = require("./amplifyUtils");
-const BRANCH_NAME = "chore-amplify-migration-change-permalinks";
-const ORGANIZATION_NAME = "isomerpages";
-const PERMALINK_REGEX = /^permalink: /m;
-
-interface AmplifyAppInfo {
-  appId: string;
-  repoName: string;
-  name: string;
-  repoPath: string;
-}
+import { JSDOM } from "jsdom";
+import { modifyTagAttribute } from "./jsDomUtils";
+import { getRawPermalink } from "./jsDomUtils";
+import { updateFilesUploadsPath } from "./jsDomUtils";
+import { pushChangesToRemote } from "./githubUtils";
+import {
+  PERMALINK_REGEX,
+  REPOS_WITH_ERRORS,
+  REPOS_WITH_NO_CODE,
+} from "./constants";
+import { changePermalinksInMdFile } from "./mdFileUtils";
+import { checkoutBranch } from "./githubUtils";
+import { isRepoEmpty } from "./githubUtils";
 
 /**
  * Reading CSV file
@@ -56,12 +61,13 @@ function readCsvFile(
 
 async function main() {
   const args = process.argv.slice(2);
-  console.log(args);
   const userIdString = args
     .find((arg) => arg.startsWith("-user-id="))
     ?.split("=")[1];
   if (!userIdString) {
-    console.error("Please provide a user id with the -user-id= flag");
+    console.error(
+      "Please provide a user id with the -user-id= flag. Eg `npm run amplify-migrate -- -user-id=1`"
+    );
     return;
   }
   const userId = parseInt(userIdString);
@@ -76,105 +82,106 @@ async function main() {
         console.info(`Skipping ${repoName} as it has no code`);
         // write repos that have no code to a file
         fs.appendFileSync(
-          path.join(__dirname, "repos-with-no-code.txt"),
+          path.join(__dirname, REPOS_WITH_NO_CODE),
           `${repoName} ` + os.EOL
         );
         return;
       }
       await migrateRepo(repoName, name, userId);
     } catch (e) {
-      const message = (`Error occurred for ${repoName}: ${e}`)
+      const error: errorMessage = {
+        message: `${e}`,
+        repoName,
+      };
+      const message = `Error occurred for ${error.repoName}: ${error.message}`;
       console.error(message);
-      // append this to a file 
+      // append this to a file
       fs.appendFileSync(
-        path.join(__dirname, "repos-with-errors.txt"),
+        path.join(__dirname, REPOS_WITH_ERRORS),
         `${message} ` + os.EOL
       );
     }
   });
 }
 
-async function isRepoEmpty(repoName: string): Promise<boolean> {
-  const octokit = new Octokit({
-    auth: process.env.GITHUB_ACCESS_TOKEN,
-  });
-  try {
-    const result = await octokit.request(
-      `GET /repos/${ORGANIZATION_NAME}/${repoName}/contents/README.md`,
-      {
-        owner: ORGANIZATION_NAME,
-        repo: repoName,
-        path: `README.md`,
-      }
-    );
-    const fileExists = result.status === 200;
-    if (fileExists) return false;
-    throw new Error(`Unexpected status code ${result.status}`);
-  } catch (e: any) {
-    if (e.status === 404) {
-      return true;
-    }
-    throw e;
+async function migrateRepo(repoName: string, name: string, userId: number) {
+  const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
+
+  const buildSpec = await readBuildSpec();
+  const appId = await createAmplifyApp(repoName, buildSpec);
+  const amplifyAppInfo: AmplifyAppInfo = {
+    appId,
+    repoName,
+    name,
+    repoPath,
+  };
+  await createAmplifyBranches(amplifyAppInfo);
+  await startReleaseJob(amplifyAppInfo);
+  await checkoutBranch(repoPath, repoName);
+  await modifyRepo({ repoName, appId, repoPath, name });
+  await buildLocally(repoPath);
+  await pushChangesToRemote(amplifyAppInfo);
+  await generateRedirectsRules(amplifyAppInfo);
+  await generateSqlCommands(amplifyAppInfo, userId);
+}
+
+async function generateRedirectsRules({ repoName, repoPath }: AmplifyAppInfo) {
+  const redirectsPath = path.join(repoPath,'_redirects')
+  if (fs.existsSync(redirectsPath)) {
+    const redirects = fs.readFileSync(redirectsPath, 'utf-8');
+    const lines = redirects.split('\n').filter(line => line.trim() !== '');
+    const json = lines.map(line => {
+      const [source, target] = line.split(" ");
+      return {
+        source,
+        target,
+        status: "301",
+        condition: null,
+      };
+    });
+    json.push({
+      source: '/<*>',
+      target: '/404.html',
+      status: '404',
+      condition: null,
+    });
+    fs.writeFileSync(path.join(__dirname,`redirects_${repoName}.json`), JSON.stringify(json, null, 2));
+    console.log('Redirects file converted to JSON');
+  } else {
+    console.log('_redirects file does not exist');
   }
 }
 
-async function migrateRepo(repoName: string, name: string, userId: number) {
-  const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
-  try {
-    const buildSpec = await readBuildSpec();
-    const appId = await createAmplifyApp(repoName, buildSpec);
-    const amplifyAppInfo: AmplifyAppInfo = {
-      appId,
-      repoName,
-      name,
-      repoPath,
-    };
-    await createAmplifyBranches(amplifyAppInfo);
-    await startReleaseJob(amplifyAppInfo);
-    await modifyRepo(amplifyAppInfo);
-    await pushChangesToRemote(amplifyAppInfo);
-    await generateSqlCommands(amplifyAppInfo, userId);
-  } catch (e) {
-    console.error(e);
-  }
+/**
+ * This function serves as a quick sanity check to make such there are no build errors
+ * Note, existence of build errors might not have occurred due to the migration,
+ * but could have been there before the migration
+ * @param repoPath absolute path to the repo
+ */
+async function buildLocally(repoPath: string) {
+  const bashScriptPath = path.join(__dirname, "jekyllBuildScript.sh");
+  const buildCommand = `bash ${bashScriptPath}`;
+  execSync(buildCommand, { cwd: repoPath });
 }
 
 async function modifyRepo({ repoName, appId, repoPath }: AmplifyAppInfo) {
-  if (fs.existsSync(repoPath)) {
-    console.info(
-      `Repository ${repoName} already exists. Pulling changes from origin.`
-    );
-    await simpleGit(repoPath).pull("origin", "staging");
-  } else {
-    console.info(`Cloning ${repoName} repository from ${ORGANIZATION_NAME}...`);
-    await simpleGit().clone(
-      `https://github.com/${ORGANIZATION_NAME}/${repoName}.git`,
-      repoPath
-    );
-  }
-
-  /**
-   * get the list of branches, guaranteed to be in
-   * local since we don't intend to push BRANCH_NAME to remote
-   */
-  const branches = await simpleGit(repoPath).branchLocal();
-  if (branches.all.includes(BRANCH_NAME)) {
-    console.log("Branch already exists. Checking out branch.");
-    await simpleGit(repoPath).checkout(BRANCH_NAME);
-  } else {
-    await simpleGit(repoPath).checkoutLocalBranch(BRANCH_NAME);
-  }
-
-  await modifyPermalinks(repoPath);
-
+  await modifyPermalinks({ repoPath, repoName });
   await updateConfigYml(appId, repoPath);
 }
 
-async function modifyPermalinks(repoPath: string) {
-  const mdFiles: string[] = await glob("**/*.md", { cwd: repoPath });
+async function modifyPermalinks({
+  repoPath,
+  repoName,
+}: {
+  repoPath: string;
+  repoName: string;
+}) {
+  const mdFiles: string[] = await glob("**/*.md", { cwd: repoPath, ignore: "_site/**" });
   // dictionary  of changed permalinks
   const changedPermalinks: { [key: string]: string } = {};
-  mdFiles.map(async (file) => {
+  // NOTE: do not use map here, as we want to wait for each file to be processed
+  // due to the existence of .git/index.lock files that prevent multiple git commands from running concurrently
+  for await (const file of mdFiles) {
     const filePath = path.join(repoPath, file);
     const fileContent = (await fs.promises.readFile(filePath)).toString();
     const permalinkIndex = fileContent.search(PERMALINK_REGEX);
@@ -186,8 +193,16 @@ async function modifyPermalinks(repoPath: string) {
       );
       let permalinkLineTrimmed = permalinkLine.trim();
 
-      // check if permalink has quotation marks, if so, remove them
-      permalinkLineTrimmed = permalinkLineTrimmed.replace(/"/g, "");
+      // check if permalink has quotation marks at the start and at the end, and if so, remove them
+      assert(permalinkLineTrimmed.startsWith(`permalink:`));
+      let permalinkValue = permalinkLineTrimmed
+        .replace(`permalink:`, "")
+        .trim()
+        .replace(/^"+/, "")
+        .replace(/"+$/, "")
+        .replace(/^'+/, "")
+        .replace(/'+$/, "");
+      permalinkLineTrimmed = `permalink: ${permalinkValue}`;
 
       // NOTE: this is to allow backward compatibility with existing netlify sites
       // To read more: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9baff55ef4aebbe9f472fadf5a096?pvs=4
@@ -208,9 +223,14 @@ async function modifyPermalinks(repoPath: string) {
       }
       await simpleGit(repoPath).add(filePath);
     }
-  });
+  }
 
-  await changePermalinksReference(mdFiles, repoPath, changedPermalinks);
+  await changePermalinksReference(
+    mdFiles,
+    repoPath,
+    changedPermalinks,
+    repoName
+  );
 
   const commitMessage = "chore(Amplify-Migration): Update permalinks in files";
   await simpleGit(repoPath).commit(commitMessage);
@@ -219,12 +239,25 @@ async function modifyPermalinks(repoPath: string) {
 async function changePermalinksReference(
   mdFiles: string[],
   repoPath: string,
-  changedPermalinks: { [key: string]: string }
+  changedPermalinks: { [key: string]: string },
+  currentRepoName: string
 ) {
-  mdFiles.map(async (file) => {
+  const setOfAllDocumentsPath = await getAllDocumentsPath(repoPath);
+  
+  await simpleGit(repoPath).commit("feat(Amplify-Migration): Update files to lowercase");
+
+  // NOTE: do not use map here, as we want to wait for each file to be processed
+  // due to the existence of .git/index.lock files that prevent multiple git commands from running concurrently
+  for await (const file of mdFiles) {
     const filePath = path.join(repoPath, file);
-    await changePermalinksInMdFile(filePath, repoPath, changedPermalinks);
-  });
+    await changePermalinksInMdFile({
+      filePath,
+      repoPath,
+      changedPermalinks,
+      setOfAllDocumentsPath,
+      currentRepoName,
+    });
+  }
 
   // special file in navigation.yml
   const navigationYmlPath = path.join(repoPath, "_data/navigation.yml");
@@ -258,94 +291,115 @@ async function changePermalinksReference(
   }
 }
 
-/**
- * Requirements:
- * convert `/some/path` to `some/path`
- * convert `some/path/` to `some/path`
- * above two variants with `permalink: ` prefix
- * above two variants with `url: ` prefix
- * @param permalink original permalink
- * @returns raw permalinks without leading/trailing slash
- */
-function getRawPermalink(permalink: string) {
-  let trimmedPermalink = permalink.trim();
-  if (trimmedPermalink.startsWith(`permalink: `)) {
-    trimmedPermalink = permalink.trim().slice(11);
-  }
-  if (trimmedPermalink.startsWith(`url: `)) {
-    trimmedPermalink = permalink.trim().slice(5);
-  }
-  if (trimmedPermalink.startsWith(`/`)) {
-    trimmedPermalink = trimmedPermalink.slice(1);
-  }
-  if (trimmedPermalink.endsWith("/")) {
-    trimmedPermalink = trimmedPermalink.slice(0, -1);
-  }
-
-  return trimmedPermalink;
-}
-
-async function changePermalinksInMdFile(
-  filePath: string,
-  repoPath: string,
-  changedPermalinks: { [key: string]: string }
-) {
-  let fileContent = await fs.promises.readFile(filePath, "utf-8");
-  let fileChanged = false;
-
-  ({ fileContent, fileChanged } = changeFileContent(
-    fileContent,
-    changedPermalinks
-  ));
-
-  if (fileChanged) {
-    await fs.promises.writeFile(filePath, fileContent, "utf-8");
-    await simpleGit(repoPath).add(filePath);
-  }
-}
-
-function changeFileContent(
-  fileContent: string,
-  changedPermalinks: { [oldPermalink: string]: string }
-) {
-  let hasFileChanged = false;
+export async function changeFileContent({
+  fileContent,
+  changedPermalinks,
+  setOfAllDocumentsPath,
+  currentRepoName,
+}: {
+  fileContent: string;
+  changedPermalinks: { [oldPermalink: string]: string };
+  setOfAllDocumentsPath: Set<string>;
+  currentRepoName: string;
+}) {
   // two different permalink patterns to take care of
   // 1. href="original_permalink"
   // 2. [click here](original_permalink)
   // 1 is solved using JSDOM, 2 is solved using regex
 
+  let dom: JSDOM = new JSDOM(fileContent);
+  let normalisedUrls = new Set<string>();
+
+  ({ changedPermalinks, dom, fileContent } =
+    await modifyTagAttribute({
+      dom,
+      changedPermalinks,
+      tagAttribute: { tagName: "a", attribute: "href" },
+      fileContent,
+      setOfAllDocumentsPath,
+      normalisedUrls,
+      currentRepoName,
+    }));
+
+  ({ changedPermalinks, dom, fileContent } =
+    await modifyTagAttribute({
+      dom,
+      changedPermalinks,
+      tagAttribute: { tagName: "img", attribute: "src" },
+      fileContent,
+      setOfAllDocumentsPath,
+      normalisedUrls,
+      currentRepoName,
+    }));
+    
   const markdownRegex = /\[(.*?)\]\((.*?)\)/g;
-  const dom = new JSDOM(fileContent);
-  dom.window.document.querySelectorAll("a").forEach((a: any) => {
-    // replace permalinks with lowercase and in changedPermalinks
-    let rawPermalink = getRawPermalink(a.href);
+  const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
-    if (changedPermalinks[rawPermalink]) {
-      a.href = a.href.replace(rawPermalink, changedPermalinks[rawPermalink]);
-      hasFileChanged = true;
-    }
-  });
-
-  fileContent = hasFileChanged
-    ? dom.window.document.body.innerHTML
-    : fileContent;
-  const markdownRelativeUrlMatches = fileContent.match(markdownRegex);
-
-  if (markdownRelativeUrlMatches) {
-    markdownRelativeUrlMatches.map((match) => {
-      let originalPermalink = match.slice(match.indexOf("(") + 1, -1);
-      originalPermalink = getRawPermalink(originalPermalink);
-      if (!changedPermalinks[originalPermalink]) {
-        return;
-      }
-      const newPermalink = originalPermalink.toLocaleLowerCase();
+  for (const match of markdownRelativeUrlMatches) {
+    const url = match.slice(match.indexOf("](") + 2, -1);
+    let originalPermalink = getRawPermalink(url);
+    if (changedPermalinks[originalPermalink]) {
+      const newPermalink = originalPermalink.toLowerCase();
       const newMatch = match.replace(originalPermalink, newPermalink);
       fileContent = fileContent.replace(match, newMatch);
+    }
 
-      hasFileChanged = true;
-    });
+  
+    const { fileContent: filepathContent } =
+      await updateFilesUploadsPath(
+        url,
+        setOfAllDocumentsPath,
+        currentRepoName
+      );
+    fileContent = fileContent.replace(url, filepathContent);
   }
-  return { fileContent, fileChanged: hasFileChanged };
+
+  return { fileContent, };
+}
+
+async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
+  const filePaths = new Set<string>();
+  
+  async function traverseDirectory(dir: string) {
+    const files = await fs.promises.readdir(dir);
+    for (const file of files) {
+      const innerFilePath = path.join(dir, file);
+      const stat = await fs.promises.stat(innerFilePath);
+      if (stat.isDirectory()) {
+        await traverseDirectory(path.join(dir,file));
+        // Convert the directory name to lowercase
+        const lowercaseDirName = file.toLowerCase();
+        const lowercaseDirPath = path.join(dir, lowercaseDirName);
+        if (innerFilePath !== lowercaseDirPath) {
+          await fs.promises.rename(innerFilePath, lowercaseDirPath);
+        }
+      } else {
+        // This converts /files/PATH/blah.pdf -> files/path/blah.pdf 
+        // and files/path/BLAH.pdf -> files/path/blah.pdf
+        const lowercaseInnerFilePath = dirPath + innerFilePath.replace(dirPath, "").toLowerCase();
+        if (lowercaseInnerFilePath !== innerFilePath) {
+          /**
+           * We need to force mv -f at the file level to commit case changes for files 
+           * in github. 
+           * See https://stackoverflow.com/questions/17683458/how-do-i-commit-case-sensitive-only-filename-changes-in-git
+           * 
+           * NOTE: We are making a raw call here since simple git 
+           * mv func is not flexible enough to have the '-f' option
+           */
+          await simpleGit(dirPath).raw(["mv", "-f", innerFilePath, lowercaseInnerFilePath]);
+          const isFileLowercase = file === file.toLowerCase();
+          if (!isFileLowercase) await fs.promises.rename(innerFilePath, path.join(dir, file.toLowerCase())); 
+        }
+        filePaths.add(lowercaseInnerFilePath.slice(dirPath.length));
+      }
+    }
+  }
+  const filesRootDir = path.join(dirPath, "files");
+  await traverseDirectory(filesRootDir);
+  const imagesRootDir = path.join(dirPath, "images");
+  await traverseDirectory(imagesRootDir);
+  
+  return filePaths;
 }
 
 async function updateConfigYml(appId: string, repoPath: string) {
@@ -371,15 +425,6 @@ async function updateConfigYml(appId: string, repoPath: string) {
   await simpleGit(repoPath).commit(
     "chore(Amplify-Migration): update config.yml file"
   );
-}
-
-async function pushChangesToRemote({ repoPath }: AmplifyAppInfo) {
-  await simpleGit(repoPath).checkout("staging");
-  await simpleGit(repoPath).merge([BRANCH_NAME]);
-
-  await simpleGit(repoPath).push("origin", "staging");
-  await simpleGit(repoPath).deleteLocalBranch(BRANCH_NAME);
-  console.info("Merge and delete of add-trailing-slash branch successful");
 }
 
 async function generateSqlCommands(

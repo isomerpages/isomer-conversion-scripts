@@ -24,7 +24,7 @@ node migrationScript.js <repo name>
 ### How to use
 
 1. Populate environment variables for the following
-
+- `GITHUB_ACCESS_TOKEN` (Github personal access token)
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
