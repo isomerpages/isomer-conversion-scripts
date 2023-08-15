@@ -18,6 +18,7 @@ import { execSync } from "child_process";
 require("dotenv").config();
 
 import { JSDOM } from "jsdom";
+import YAML from 'yaml';
 import { modifyTagAttribute } from "./jsDomUtils";
 import { getRawPermalink } from "./jsDomUtils";
 import { updateFilesUploadsPath } from "./jsDomUtils";
@@ -177,6 +178,8 @@ async function modifyPermalinks({
   repoName: string;
 }) {
   const mdFiles: string[] = await glob("**/*.md", { cwd: repoPath, ignore: "_site/**" });
+  const ymlFiles: string[] = await glob("**/*.yml", { cwd: repoPath, ignore: "_site/**" });
+  const mdAndYmlFiles = [...mdFiles, ...ymlFiles];
   // dictionary  of changed permalinks
   const changedPermalinks: { [key: string]: string } = {};
   // NOTE: do not use map here, as we want to wait for each file to be processed
@@ -226,7 +229,7 @@ async function modifyPermalinks({
   }
 
   await changePermalinksReference(
-    mdFiles,
+    mdAndYmlFiles,
     repoPath,
     changedPermalinks,
     repoName
@@ -237,7 +240,7 @@ async function modifyPermalinks({
 }
 
 async function changePermalinksReference(
-  mdFiles: string[],
+  mdAndYmlFiles: string[],
   repoPath: string,
   changedPermalinks: { [key: string]: string },
   currentRepoName: string
@@ -248,7 +251,7 @@ async function changePermalinksReference(
 
   // NOTE: do not use map here, as we want to wait for each file to be processed
   // due to the existence of .git/index.lock files that prevent multiple git commands from running concurrently
-  for await (const file of mdFiles) {
+  for await (const file of mdAndYmlFiles) {
     const filePath = path.join(repoPath, file);
     await changePermalinksInMdFile({
       filePath,
@@ -302,10 +305,11 @@ export async function changeFileContent({
   setOfAllDocumentsPath: Set<string>;
   currentRepoName: string;
 }) {
-  // two different permalink patterns to take care of
-  // 1. href="original_permalink"
-  // 2. [click here](original_permalink)
-  // 1 is solved using JSDOM, 2 is solved using regex
+  // 3 different permalink patterns to take care of
+  // 1. href="original_permalink" -> HTML syntax
+  // 2. [click here](original_permalink) -> Markdown syntax
+  // 3. <some_key>: original_permalink -> Yml syntax 
+  // 1 is solved using JSDOM,  2 is solved using regex, 3 is solved using yaml parser 
 
   let dom: JSDOM = new JSDOM(fileContent);
   let normalisedUrls = new Set<string>();
@@ -354,7 +358,52 @@ export async function changeFileContent({
     fileContent = fileContent.replace(url, filepathContent);
   }
 
-  return { fileContent, };
+  const ymlKeys = ["shareicon", "favicon", "file_url", "image"] 
+  const yamlParser = YAML.parseAllDocuments(fileContent)
+  
+  /**
+   * This is to handle the case where the yml file has multiple documents which are
+   * separated by document end marker lines. Since we don't expect to have > 1 yml
+   * document in a single file, we will only process the first document. The other 
+   * documents in this array are expected to be null.
+   */
+  const yamlDocument  = yamlParser[0] 
+
+  /** 
+   * This is a safe cast since we our yaml files are all This represents a YAML mapping, 
+   * which is a collection of key-value pairs. A mapping is represented by a colon (:) 
+   * separating the key and value, and can contain any valid YAML node as a value.
+   */
+  const yamlContents = yamlDocument?.contents as YAML.YAMLMap.Parsed;
+  
+  (yamlContents.items ?? []).map(async (item: any) => {
+    if (ymlKeys.includes(item.key.value)) {
+      const originalPermalink = getRawPermalink(item.value.value);
+      if (changedPermalinks[originalPermalink]) {
+        const newPermalink = originalPermalink.toLowerCase();
+        item.value.value = newPermalink;
+      }
+      const filePath = item.value.value;
+      if (setOfAllDocumentsPath.has(filePath.toLowerCase())) {
+        item.value.value = filePath.toLowerCase();
+        // YAML does not seem to have a way to update the value of a key in place 
+        fileContent = fileContent.replace(filePath, filePath.toLowerCase())
+      } else {
+        // log this in some file for manual checking after the migration
+        const errorMessage: errorMessage = {
+          message: `File ${fileContent} does not exist in the repo`,
+          repoName: currentRepoName,
+        };
+        await fs.promises.appendFile(
+          path.join(__dirname, REPOS_WITH_ERRORS),
+          `${errorMessage.repoName}: ${errorMessage.message} ` + os.EOL
+        );
+      }
+    }
+    return item;
+  });
+
+  return { fileContent };
 }
 
 async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
