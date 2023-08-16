@@ -362,59 +362,37 @@ export async function changeFileContent({
       fileContent = fileContent.replace(match, newMatch);
     }
 
-  
-    const { fileContent: filepathContent } =
-      await updateFilesUploadsPath(
-        url,
-        setOfAllDocumentsPath,
-        currentRepoName
-      );
+    const { fileContent: filepathContent } = await updateFilesUploadsPath(
+      url,
+      setOfAllDocumentsPath,
+      currentRepoName
+    );
     fileContent = fileContent.replace(url, filepathContent);
   }
 
-  const ymlKeys = ["shareicon", "favicon", "file_url", "image"] 
-  const yamlParser = YAML.parseAllDocuments(fileContent)
-  
+  const yamlParser = YAML.parseAllDocuments(fileContent);
+
   /**
    * This is to handle the case where the yml file has multiple documents which are
    * separated by document end marker lines. Since we don't expect to have > 1 yml
-   * document in a single file, we will only process the first document. The other 
+   * document in a single file, we will only process the first document. The other
    * documents in this array are expected to be null.
    */
-  const yamlDocument  = yamlParser[0] 
+  const yamlDocument = yamlParser[0];
 
-  /** 
-   * This is a safe cast since we our yaml files are all This represents a YAML mapping, 
-   * which is a collection of key-value pairs. A mapping is represented by a colon (:) 
+  /**
+   * This is a safe cast since we our yaml files are all This represents a YAML mapping,
+   * which is a collection of key-value pairs. A mapping is represented by a colon (:)
    * separating the key and value, and can contain any valid YAML node as a value.
    */
   const yamlContents = yamlDocument?.contents as YAML.YAMLMap.Parsed;
-  
-  (yamlContents.items ?? []).map(async (item: any) => {
-    if (item.value.value && ymlKeys.includes(item.key.value)) {
-      const originalPermalink = getRawPermalink(item.value.value);
-      if (changedPermalinks[originalPermalink]) {
-        const newPermalink = originalPermalink.toLowerCase();
-        item.value.value = newPermalink;
-      }
-      const filePath = item.value.value;
-      if (setOfAllDocumentsPath.has(filePath.toLowerCase())) {
-        item.value.value = filePath.toLowerCase();
-        // YAML does not seem to have a way to update the value of a key in place 
-        fileContent = fileContent.replace(filePath, filePath.toLowerCase())
-      } else {
-        // log this in some file for manual checking after the migration
-        const errorMessage: errorMessage = {
-          message: `File ${filePath} does not exist in the repo`,
-          repoName: currentRepoName,
-        };
-        await fs.promises.appendFile(
-          path.join(__dirname, REPOS_WITH_ERRORS),
-          `${errorMessage.repoName}: ${errorMessage.message} ` + os.EOL
-        );
-      }
-    }
-    return item;
+
+  fileContent = await changeLinksInYml({
+    yamlContents,
+    fileContent,
+    changedPermalinks,
+    currentRepoName,
+    setOfAllDocumentsPath,
   });
 
   return { fileContent };
