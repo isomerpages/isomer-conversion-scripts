@@ -28,7 +28,7 @@ export async function changeContentInYamlFile(
   fileContent: string,
   currentRepoName: string
 ) {
-  if (!item.value) return fileContent;
+  if (!item.value || !item.value.toString()) return fileContent;
   const oriFilePath = item.value.toString();
   let filePath = item.value.toString();
   const originalPermalink = getRawPermalink(filePath);
