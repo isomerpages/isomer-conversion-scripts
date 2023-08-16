@@ -1,4 +1,4 @@
-import YAML, { Scalar, isPair, isScalar, isMap, isSeq } from "yaml";
+import YAML, { Scalar, isPair, isScalar, isMap, isSeq, Pair } from "yaml";
 import { getRawPermalink } from "./jsDomUtils";
 import { REPOS_WITH_ERRORS } from "./constants";
 import os from "os";
@@ -22,14 +22,15 @@ export function isYAMLPair(node: any): node is YAML.Pair<Scalar, Scalar> {
 }
 
 export async function changeContentInYamlFile(
-  item: any,
+  item: Pair<Scalar, Scalar>,
   changedPermalinks: { [oldPermalink: string]: string },
   setOfAllDocumentsPath: Set<string>,
   fileContent: string,
   currentRepoName: string
 ) {
-  const oriFilePath = item.value.value;
-  let filePath = item.value.value;
+  if (!item.value) return fileContent;
+  const oriFilePath = item.value.toString();
+  let filePath = item.value.toString();
   const originalPermalink = getRawPermalink(filePath);
   if (changedPermalinks[originalPermalink]) {
     const newPermalink = originalPermalink.toLowerCase();
@@ -81,11 +82,7 @@ export async function changeLinksInYml({
           });
         }
       }
-      if (
-        isScalar(item.value) &&
-        isScalar(item.key) &&
-        YML_KEYS.includes(item.key.toString())
-      ) {
+      if (isYAMLPair(item) && YML_KEYS.includes(item.key.toString())) {
         fileContent = await changeContentInYamlFile(
           item,
           changedPermalinks,
