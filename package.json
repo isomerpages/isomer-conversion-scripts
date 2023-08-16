@@ -4,10 +4,10 @@
   "description": "Running the scripts in this folder will allow you to modify the code in an Isomer V1 repository to be compatible with Isomer V2 templates.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "lint": "eslint --ext .js --ext .jsx --ignore-path .gitignore .",
     "lint-fix": "eslint --ignore-path .gitignore . --fix",
-    "amplify:migrate": "npx ts-node src/amplify-migration/amplifyMigrationScript.ts",
+    "amplify:migrate": "npx ts-node src/amplify-migration/amplifyMigrationScript.ts -user-id=457",
     "jump:staging": "source .ssh/.env.staging && ssh -L 5433:$DB_HOST:5432 $SSH_USER@$SSH_HOST -i .ssh/isomercms-staging-bastion.pem",
     "jump:prod": "source .ssh/.env.prod && ssh -L 5433:$DB_HOST:5432 $SSH_USER@$SSH_HOST -i .ssh/isomercms-production-bastion.pem"
   },
@@ -46,7 +46,6 @@
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.2",
-    "@types/jest": "^29.5.3",
     "@types/jsdom": "^21.1.1",
     "@typescript-eslint/eslint-plugin": "^2.34.0",
     "@typescript-eslint/parser": "^2.34.0",
