@@ -1,4 +1,4 @@
-import YAML, { Scalar, isPair, isScalar, isMap } from "yaml";
+import YAML, { Scalar, isPair, isScalar, isMap, isSeq } from "yaml";
 import { getRawPermalink } from "./jsDomUtils";
 import { REPOS_WITH_ERRORS } from "./constants";
 import os from "os";
@@ -69,37 +69,34 @@ export async function changeLinksInYml({
   currentRepoName,
 }: changeLinksInYmlProp): Promise<string> {
   if (isMap(yamlContents) && yamlContents.items) {
-    let modifiedFileContent = fileContent;
     for (const item of yamlContents.items) {
-      if (isPair(item) && isMap(item.value)) {
-        await Promise.all(
-          item.value.items.map(async (subItem) => {
-            modifiedFileContent = await changeLinksInYml({
-              yamlContents: subItem,
-              fileContent: modifiedFileContent,
-              changedPermalinks,
-              setOfAllDocumentsPath,
-              currentRepoName,
-            });
-          })
-        );
+      if (isPair(item) && (isSeq(item.value) || isMap(item.value))) {
+        for (const subItem of item.value.items) {
+          fileContent = await changeLinksInYml({
+            yamlContents: subItem,
+            fileContent: fileContent,
+            changedPermalinks,
+            setOfAllDocumentsPath,
+            currentRepoName,
+          });
+        }
       }
       if (
         isScalar(item.value) &&
         isScalar(item.key) &&
         YML_KEYS.includes(item.key.toString())
       ) {
-        modifiedFileContent = await changeContentInYamlFile(
+        fileContent = await changeContentInYamlFile(
           item,
           changedPermalinks,
           setOfAllDocumentsPath,
-          modifiedFileContent,
+          fileContent,
           currentRepoName
         );
       }
     }
 
-    return modifiedFileContent;
+    return fileContent;
   }
 
   if (
