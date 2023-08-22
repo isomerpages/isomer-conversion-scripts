@@ -4,7 +4,7 @@
   "description": "Running the scripts in this folder will allow you to modify the code in an Isomer V1 repository to be compatible with Isomer V2 templates.",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --ext .js --ext .jsx --ignore-path .gitignore .",
     "lint-fix": "eslint --ignore-path .gitignore . --fix",
     "amplify:migrate": "npx ts-node src/amplify-migration/amplifyMigrationScript.ts -user-id=457",
