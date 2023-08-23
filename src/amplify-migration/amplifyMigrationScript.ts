@@ -374,7 +374,8 @@ export async function changeFileContent({
 
   /**
    * This is to handle the case where the yml file has multiple documents which are
-   * separated by document end marker lines. Since we don't expect to have > 1 yml
+   * separated by document end marker lines, ie when the yaml content exists as the 
+   * front matter in a .md file. Since we don't expect to have > 1 yml
    * document in a single file, we will only process the first document. The other
    * documents in this array are expected to be null.
    */
