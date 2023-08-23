@@ -14,7 +14,13 @@ export const YML_KEYS = [
   "logo",
   "background",
 ];
-
+/**
+ * As the Concrete Syntax Tree is generated, this utility function checks if the node is a
+ * YAML pair with scalar key and scalar value. Else, the nodes in the vector would have to
+ * parsed recursively.
+ * @param node The node to check
+ * @returns If the node is a YAML pair with scalar key and scalar value
+ */
 export function isYAMLPair(node: any): node is YAML.Pair<Scalar, Scalar> {
   if (!isPair(node)) return false;
   if (isScalar(node.value) && isScalar(node.key)) return true;
@@ -55,55 +61,84 @@ export async function changeContentInYamlFile(
 }
 
 export interface changeLinksInYmlProp {
-  yamlContents: YAML.YAMLMap.Parsed | YAML.Scalar.Parsed | any;
+  yamlNode: YAML.YAMLMap.Parsed | YAML.Scalar.Parsed | any;
   fileContent: string;
   changedPermalinks: { [oldPermalink: string]: string };
   setOfAllDocumentsPath: Set<string>;
   currentRepoName: string;
 }
 
+/**
+ * This function recursively traverses the YAML tree and changes the links in the YAML file.
+ */
 export async function changeLinksInYml({
-  yamlContents,
+  yamlNode: yamlNode,
   fileContent,
   changedPermalinks,
   setOfAllDocumentsPath,
   currentRepoName,
 }: changeLinksInYmlProp): Promise<string> {
-  if (isMap(yamlContents) && yamlContents.items) {
-    for (const item of yamlContents.items) {
-      if (isPair(item) && (isSeq(item.value) || isMap(item.value))) {
-        for (const subItem of item.value.items) {
-          fileContent = await changeLinksInYml({
-            yamlContents: subItem,
-            fileContent: fileContent,
-            changedPermalinks,
-            setOfAllDocumentsPath,
-            currentRepoName,
-          });
-        }
-      }
-      if (isYAMLPair(item) && YML_KEYS.includes(item.key.toString())) {
-        fileContent = await changeContentInYamlFile(
-          item,
-          changedPermalinks,
-          setOfAllDocumentsPath,
-          fileContent,
-          currentRepoName
-        );
-      }
+  /**
+   * Checks if the node is a map
+   * eg.
+   * sections:
+   *   - hero:
+   *       title: "title"
+   *       ...
+   *   - infopic:
+   *       title: "title"
+   *       ...
+   */
+  if (isMap(yamlNode) && yamlNode.items) {
+    // Iterate through all the children of the parent node
+    for (const item of yamlNode.items) {
+      fileContent = await changeLinksInYml({
+        yamlNode: item,
+        fileContent: fileContent,
+        changedPermalinks,
+        setOfAllDocumentsPath,
+        currentRepoName,
+      });
     }
 
     return fileContent;
   }
 
+  /**
+   * Checks if the node child is a sequence/map
+   * eg.
+   * - hero:
+   *    title: "title"
+   *    ...
+   *
+   */
+  if (isPair(yamlNode) && (isSeq(yamlNode.value) || isMap(yamlNode.value))) {
+    // Iterate through all the children of the parent node
+    for (const item of yamlNode.value.items) {
+      fileContent = await changeLinksInYml({
+        yamlNode: item,
+        fileContent: fileContent,
+        changedPermalinks,
+        setOfAllDocumentsPath,
+        currentRepoName,
+      });
+    }
+    return fileContent;
+  }
+
+  /**
+   * This is for the case where the YAML file has a single key-value pair.
+   * We do not need to traverse the tree any more in this case as we have
+   * already reached the leaf node.
+   */
   if (
-    isYAMLPair(yamlContents) &&
-    yamlContents.value &&
-    yamlContents.key &&
-    YML_KEYS.includes(yamlContents.key.toString())
+    isYAMLPair(yamlNode) &&
+    yamlNode.value &&
+    yamlNode.key &&
+    YML_KEYS.includes(yamlNode.key.toString())
   ) {
     fileContent = await changeContentInYamlFile(
-      yamlContents,
+      yamlNode,
       changedPermalinks,
       setOfAllDocumentsPath,
       fileContent,
