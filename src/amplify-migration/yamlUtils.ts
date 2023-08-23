@@ -21,7 +21,7 @@ export const YML_KEYS = [
  * @param node The node to check
  * @returns If the node is a YAML pair with scalar key and scalar value
  */
-export function isYAMLPair(node: any): node is YAML.Pair<Scalar, Scalar> {
+export function isYAMLPairScalar(node: any): node is YAML.Pair<Scalar, Scalar> {
   if (!isPair(node)) return false;
   if (isScalar(node.value) && isScalar(node.key)) return true;
   return false;
@@ -132,7 +132,7 @@ export async function changeLinksInYml({
    * already reached the leaf node.
    */
   if (
-    isYAMLPair(yamlNode) &&
+    isYAMLPairScalar(yamlNode) &&
     yamlNode.value &&
     yamlNode.key &&
     YML_KEYS.includes(yamlNode.key.toString())
