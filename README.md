@@ -21,6 +21,10 @@ node migrationScript.js <repo name>
 
 ## Netlify to Amplify Migration
 
+## How it works
+
+Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9baff55ef4aebbe9f472fadf5a096?pvs=4
+
 ### How to use
 
 1. Populate environment variables for the following
