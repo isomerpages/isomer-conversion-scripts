@@ -374,7 +374,7 @@ export async function changeFileContent({
 
   /**
    * This is to handle the case where the yml file has multiple documents which are
-   * separated by document end marker lines, ie when the yaml content exists as the 
+   * separated by document end marker lines, ie when the yaml content exists as the
    * front matter in a .md file. Since we don't expect to have > 1 yml
    * document in a single file, we will only process the first document. The other
    * documents in this array are expected to be null.
@@ -382,9 +382,10 @@ export async function changeFileContent({
   const yamlDocument = yamlParser[0];
 
   /**
-   * This is a safe cast since we our yaml files are all This represents a YAML mapping,
-   * which is a collection of key-value pairs. A mapping is represented by a colon (:)
-   * separating the key and value, and can contain any valid YAML node as a value.
+   * This is a safe cast as we expect the files to be of valid yaml syntax and not `null`.
+   * This represents a YAML mapping, which is a collection of key-value pairs. A mapping
+   * is represented by a colon (:) separating the key and value, and can contain any
+   * valid YAML node as a value.
    */
   const yamlContents = yamlDocument?.contents as YAML.YAMLMap.Parsed;
 
