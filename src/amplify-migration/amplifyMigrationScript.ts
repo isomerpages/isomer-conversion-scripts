@@ -18,6 +18,7 @@ import { execSync } from "child_process";
 require("dotenv").config();
 
 import { JSDOM } from "jsdom";
+import YAML from "yaml";
 import { modifyTagAttribute } from "./jsDomUtils";
 import { getRawPermalink } from "./jsDomUtils";
 import { updateFilesUploadsPath } from "./jsDomUtils";
@@ -30,6 +31,7 @@ import {
 import { changePermalinksInMdFile } from "./mdFileUtils";
 import { checkoutBranch } from "./githubUtils";
 import { isRepoEmpty } from "./githubUtils";
+import { changeLinksInYml } from "./yamlUtils";
 
 /**
  * Reading CSV file
@@ -126,11 +128,11 @@ async function migrateRepo(repoName: string, name: string, userId: number) {
 }
 
 async function generateRedirectsRules({ repoName, repoPath }: AmplifyAppInfo) {
-  const redirectsPath = path.join(repoPath,'_redirects')
+  const redirectsPath = path.join(repoPath, "_redirects");
   if (fs.existsSync(redirectsPath)) {
-    const redirects = fs.readFileSync(redirectsPath, 'utf-8');
-    const lines = redirects.split('\n').filter(line => line.trim() !== '');
-    const json = lines.map(line => {
+    const redirects = fs.readFileSync(redirectsPath, "utf-8");
+    const lines = redirects.split("\n").filter((line) => line.trim() !== "");
+    const json = lines.map((line) => {
       const [source, target] = line.split(" ");
       return {
         source,
@@ -140,15 +142,18 @@ async function generateRedirectsRules({ repoName, repoPath }: AmplifyAppInfo) {
       };
     });
     json.push({
-      source: '/<*>',
-      target: '/404.html',
-      status: '404',
+      source: "/<*>",
+      target: "/404.html",
+      status: "404",
       condition: null,
     });
-    fs.writeFileSync(path.join(__dirname,`redirects_${repoName}.json`), JSON.stringify(json, null, 2));
-    console.log('Redirects file converted to JSON');
+    fs.writeFileSync(
+      path.join(__dirname, `redirects_${repoName}.json`),
+      JSON.stringify(json, null, 2)
+    );
+    console.log("Redirects file converted to JSON");
   } else {
-    console.log('_redirects file does not exist');
+    console.log("_redirects file does not exist");
   }
 }
 
@@ -164,7 +169,11 @@ async function buildLocally(repoPath: string) {
   execSync(buildCommand, { cwd: repoPath });
 }
 
-async function modifyRepo({ repoName, appId, repoPath }: AmplifyAppInfo) {
+export async function modifyRepo({
+  repoName,
+  appId,
+  repoPath,
+}: AmplifyAppInfo) {
   await modifyPermalinks({ repoPath, repoName });
   await updateConfigYml(appId, repoPath);
 }
@@ -176,7 +185,15 @@ async function modifyPermalinks({
   repoPath: string;
   repoName: string;
 }) {
-  const mdFiles: string[] = await glob("**/*.md", { cwd: repoPath, ignore: "_site/**" });
+  const mdFiles: string[] = await glob("**/*.md", {
+    cwd: repoPath,
+    ignore: "_site/**",
+  });
+  const ymlFiles: string[] = await glob("**/*.yml", {
+    cwd: repoPath,
+    ignore: "_site/**",
+  });
+  const mdAndYmlFiles = [...mdFiles, ...ymlFiles];
   // dictionary  of changed permalinks
   const changedPermalinks: { [key: string]: string } = {};
   // NOTE: do not use map here, as we want to wait for each file to be processed
@@ -226,7 +243,7 @@ async function modifyPermalinks({
   }
 
   await changePermalinksReference(
-    mdFiles,
+    mdAndYmlFiles,
     repoPath,
     changedPermalinks,
     repoName
@@ -237,18 +254,20 @@ async function modifyPermalinks({
 }
 
 async function changePermalinksReference(
-  mdFiles: string[],
+  mdAndYmlFiles: string[],
   repoPath: string,
   changedPermalinks: { [key: string]: string },
   currentRepoName: string
 ) {
   const setOfAllDocumentsPath = await getAllDocumentsPath(repoPath);
-  
-  await simpleGit(repoPath).commit("feat(Amplify-Migration): Update files to lowercase");
+
+  await simpleGit(repoPath).commit(
+    "feat(Amplify-Migration): Update files to lowercase"
+  );
 
   // NOTE: do not use map here, as we want to wait for each file to be processed
   // due to the existence of .git/index.lock files that prevent multiple git commands from running concurrently
-  for await (const file of mdFiles) {
+  for await (const file of mdAndYmlFiles) {
     const filePath = path.join(repoPath, file);
     await changePermalinksInMdFile({
       filePath,
@@ -302,36 +321,35 @@ export async function changeFileContent({
   setOfAllDocumentsPath: Set<string>;
   currentRepoName: string;
 }) {
-  // two different permalink patterns to take care of
-  // 1. href="original_permalink"
-  // 2. [click here](original_permalink)
-  // 1 is solved using JSDOM, 2 is solved using regex
+  // 3 different permalink patterns to take care of
+  // 1. href="original_permalink" -> HTML syntax
+  // 2. [click here](original_permalink) -> Markdown syntax
+  // 3. <some_key>: original_permalink -> Yml syntax
+  // 1 is solved using JSDOM,  2 is solved using regex, 3 is solved using yaml parser
 
   let dom: JSDOM = new JSDOM(fileContent);
   let normalisedUrls = new Set<string>();
 
-  ({ changedPermalinks, dom, fileContent } =
-    await modifyTagAttribute({
-      dom,
-      changedPermalinks,
-      tagAttribute: { tagName: "a", attribute: "href" },
-      fileContent,
-      setOfAllDocumentsPath,
-      normalisedUrls,
-      currentRepoName,
-    }));
+  ({ changedPermalinks, dom, fileContent } = await modifyTagAttribute({
+    dom,
+    changedPermalinks,
+    tagAttribute: { tagName: "a", attribute: "href" },
+    fileContent,
+    setOfAllDocumentsPath,
+    normalisedUrls,
+    currentRepoName,
+  }));
 
-  ({ changedPermalinks, dom, fileContent } =
-    await modifyTagAttribute({
-      dom,
-      changedPermalinks,
-      tagAttribute: { tagName: "img", attribute: "src" },
-      fileContent,
-      setOfAllDocumentsPath,
-      normalisedUrls,
-      currentRepoName,
-    }));
-    
+  ({ changedPermalinks, dom, fileContent } = await modifyTagAttribute({
+    dom,
+    changedPermalinks,
+    tagAttribute: { tagName: "img", attribute: "src" },
+    fileContent,
+    setOfAllDocumentsPath,
+    normalisedUrls,
+    currentRepoName,
+  }));
+
   const markdownRegex = /\[(.*?)\]\((.*?)\)/g;
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
@@ -344,29 +362,54 @@ export async function changeFileContent({
       fileContent = fileContent.replace(match, newMatch);
     }
 
-  
-    const { fileContent: filepathContent } =
-      await updateFilesUploadsPath(
-        url,
-        setOfAllDocumentsPath,
-        currentRepoName
-      );
+    const { fileContent: filepathContent } = await updateFilesUploadsPath(
+      url,
+      setOfAllDocumentsPath,
+      currentRepoName
+    );
     fileContent = fileContent.replace(url, filepathContent);
   }
 
-  return { fileContent, };
+  const yamlParser = YAML.parseAllDocuments(fileContent);
+
+  /**
+   * This is to handle the case where the yml file has multiple documents which are
+   * separated by document end marker lines, ie when the yaml content exists as the
+   * front matter in a .md file. Since we don't expect to have > 1 yml
+   * document in a single file, we will only process the first document. The other
+   * documents in this array are expected to be null.
+   */
+  const yamlDocument = yamlParser[0];
+
+  /**
+   * This is a safe cast as we expect the files to be of valid yaml syntax and not `null`.
+   * This represents a YAML mapping, which is a collection of key-value pairs. A mapping
+   * is represented by a colon (:) separating the key and value, and can contain any
+   * valid YAML node as a value.
+   */
+  const yamlContents = yamlDocument?.contents as YAML.YAMLMap.Parsed;
+
+  fileContent = await changeLinksInYml({
+    yamlContents,
+    fileContent,
+    changedPermalinks,
+    currentRepoName,
+    setOfAllDocumentsPath,
+  });
+
+  return { fileContent };
 }
 
 async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
   const filePaths = new Set<string>();
-  
+
   async function traverseDirectory(dir: string) {
     const files = await fs.promises.readdir(dir);
     for (const file of files) {
       const innerFilePath = path.join(dir, file);
       const stat = await fs.promises.stat(innerFilePath);
       if (stat.isDirectory()) {
-        await traverseDirectory(path.join(dir,file));
+        await traverseDirectory(path.join(dir, file));
         // Convert the directory name to lowercase
         const lowercaseDirName = file.toLowerCase();
         const lowercaseDirPath = path.join(dir, lowercaseDirName);
@@ -374,21 +417,31 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
           await fs.promises.rename(innerFilePath, lowercaseDirPath);
         }
       } else {
-        // This converts /files/PATH/blah.pdf -> files/path/blah.pdf 
+        // This converts /files/PATH/blah.pdf -> files/path/blah.pdf
         // and files/path/BLAH.pdf -> files/path/blah.pdf
-        const lowercaseInnerFilePath = dirPath + innerFilePath.replace(dirPath, "").toLowerCase();
+        const lowercaseInnerFilePath =
+          dirPath + innerFilePath.replace(dirPath, "").toLowerCase();
         if (lowercaseInnerFilePath !== innerFilePath) {
           /**
-           * We need to force mv -f at the file level to commit case changes for files 
-           * in github. 
+           * We need to force mv -f at the file level to commit case changes for files
+           * in github.
            * See https://stackoverflow.com/questions/17683458/how-do-i-commit-case-sensitive-only-filename-changes-in-git
-           * 
-           * NOTE: We are making a raw call here since simple git 
+           *
+           * NOTE: We are making a raw call here since simple git
            * mv func is not flexible enough to have the '-f' option
            */
-          await simpleGit(dirPath).raw(["mv", "-f", innerFilePath, lowercaseInnerFilePath]);
+          await simpleGit(dirPath).raw([
+            "mv",
+            "-f",
+            innerFilePath,
+            lowercaseInnerFilePath,
+          ]);
           const isFileLowercase = file === file.toLowerCase();
-          if (!isFileLowercase) await fs.promises.rename(innerFilePath, path.join(dir, file.toLowerCase())); 
+          if (!isFileLowercase)
+            await fs.promises.rename(
+              innerFilePath,
+              path.join(dir, file.toLowerCase())
+            );
         }
         filePaths.add(lowercaseInnerFilePath.slice(dirPath.length));
       }
@@ -398,7 +451,7 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
   await traverseDirectory(filesRootDir);
   const imagesRootDir = path.join(dirPath, "images");
   await traverseDirectory(imagesRootDir);
-  
+
   return filePaths;
 }
 
