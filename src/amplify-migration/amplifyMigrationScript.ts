@@ -350,7 +350,9 @@ export async function changeFileContent({
     currentRepoName,
   }));
 
-  const markdownRegex = /\[(.*?)\]\((.*?)\)/g;
+  // we want to be able to modify nested markdown links
+  // eg. [![inline text](/images/someimage.jpg)](/images/somedoc.pdf)
+  const markdownRegex = /(!?\[([^\]]*)\])?\(([^\s]*)\s*(".*")?\)/g;
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
   for (const match of markdownRelativeUrlMatches) {
