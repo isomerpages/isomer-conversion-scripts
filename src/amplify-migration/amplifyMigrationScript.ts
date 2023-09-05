@@ -22,7 +22,7 @@ import YAML from "yaml";
 import { modifyTagAttribute } from "./jsDomUtils";
 import { getRawPermalink } from "./jsDomUtils";
 import { updateFilesUploadsPath } from "./jsDomUtils";
-import { pushChangesToRemote } from "./githubUtils";
+import { isRepoMigrated, pushChangesToRemote } from "./githubUtils";
 import {
   PERMALINK_REGEX,
   REPOS_WITH_ERRORS,
@@ -89,7 +89,17 @@ async function main() {
         );
         return;
       }
-      await migrateRepo(repoName, name, userId);
+      const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
+      if (isRepoMigrated(repoPath)) {
+        console.info(`Skipping ${repoName} as it has already been migrated`);
+        // write repos that have no code to a file
+        fs.appendFileSync(
+          path.join(__dirname, REPOS_WITH_ERRORS),
+          `${repoName} was already migrated` + os.EOL
+        );
+        return;
+      }
+      await migrateRepo(repoName, repoPath, name, userId);
     } catch (e) {
       const error: errorMessage = {
         message: `${e}`,
@@ -106,9 +116,12 @@ async function main() {
   });
 }
 
-async function migrateRepo(repoName: string, name: string, userId: number) {
-  const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
-
+async function migrateRepo(
+  repoName: string,
+  repoPath: string,
+  name: string,
+  userId: number
+) {
   const buildSpec = await readBuildSpec();
   const appId = await createAmplifyApp(repoName, buildSpec);
   const amplifyAppInfo: AmplifyAppInfo = {
