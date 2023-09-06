@@ -47,7 +47,7 @@ Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9ba
 Certain special characters in file titles (e.g. `Å`) cannot be handled properly by the local file system - this will result in the following error:
 
 ```
-Error occurred for enterprisesg-cpso: Error: error: The following untracked working tree files would be overwritten by checkout:
+Error occurred for <repoName>: Error: error: The following untracked working tree files would be overwritten by checkout:
 <fileName>
 ```
 
