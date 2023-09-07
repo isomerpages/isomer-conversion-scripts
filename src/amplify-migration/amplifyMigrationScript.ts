@@ -111,7 +111,7 @@ async function main() {
         console.info(`Skipping ${repoName} as it has already been migrated`);
         // write repos that have no code to a file
         fs.appendFileSync(
-          path.join(__dirname, REPOS_WITH_ERRORS),
+          path.join(__dirname, LOGS_FILE),
           `${repoName} was already migrated` + os.EOL
         );
         return;
@@ -519,7 +519,7 @@ async function updateConfigYml(appId: string, repoPath: string) {
   // log in a file for manual checking after the migration
   await fs.promises.appendFile(
     path.join(__dirname, LOGS_FILE),
-    `${repoPath}: Commit ${commitMessage} has been made \n`
+    `${repoPath.split("/").pop()}: Commit ${commitMessage} has been made \n`
   );
 }
 
