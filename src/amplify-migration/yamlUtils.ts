@@ -43,10 +43,12 @@ export async function changeContentInYamlFile(
     filePath = newPermalink;
   }
 
-  if (setOfAllDocumentsPath.has(filePath.toLowerCase())) {
-    // YAML does not seem to have a way to update the value of a key in place
-    fileContent = fileContent.replace(oriFilePath, filePath.toLowerCase());
-  } else {
+  // YAML does not seem to have a way to update the value of a key in place
+  // We just mutate all to lowercase to not care about encoding. Then we report if image is not found
+  // rather than programmatically fixing something that we are not 100% sure of.
+  fileContent = fileContent.replace(oriFilePath, filePath.toLowerCase());
+
+  if (!setOfAllDocumentsPath.has(filePath.toLowerCase())) {
     // log this in some file for manual checking after the migration
     const errorMessage: errorMessage = {
       message: `File ${filePath} does not exist in the repo`,
@@ -72,7 +74,7 @@ export interface changeLinksInYmlProp {
  * This function recursively traverses the YAML tree and changes the links in the YAML file.
  */
 export async function changeLinksInYml({
-  yamlNode: yamlNode,
+  yamlNode,
   fileContent,
   changedPermalinks,
   setOfAllDocumentsPath,
