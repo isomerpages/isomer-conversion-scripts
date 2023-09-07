@@ -65,8 +65,5 @@ export async function isRepoEmpty(repoName: string): Promise<boolean> {
 export function isRepoMigrated(repoPath: string): boolean {
   // read the config.yml file
   const configFile = fs.readFileSync(`${repoPath}/_config.yml`, "utf-8");
-  if (configFile.includes(".amplifyapp.com")) {
-    return true;
-  }
-  return false;
+  return configFile.includes(".amplifyapp.com");
 }
