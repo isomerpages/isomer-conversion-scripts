@@ -61,3 +61,12 @@ export async function isRepoEmpty(repoName: string): Promise<boolean> {
     throw e;
   }
 }
+
+export function isRepoMigrated(repoPath: string): boolean {
+  // read the config.yml file
+  const configFile = fs.readFileSync(`${repoPath}/_config.yml`, "utf-8");
+  if (configFile.includes(".amplifyapp.com")) {
+    return true;
+  }
+  return false;
+}

@@ -1,6 +1,6 @@
 import YAML, { Scalar, isPair, isScalar, isMap, isSeq, Pair } from "yaml";
 import { getRawPermalink } from "./jsDomUtils";
-import { REPOS_WITH_ERRORS } from "./constants";
+import { LOGS_FILE } from "./constants";
 import os from "os";
 import fs from "fs";
 import path from "path";
@@ -53,7 +53,7 @@ export async function changeContentInYamlFile(
       repoName: currentRepoName,
     };
     await fs.promises.appendFile(
-      path.join(__dirname, REPOS_WITH_ERRORS),
+      path.join(__dirname, LOGS_FILE),
       `${errorMessage.repoName}: ${errorMessage.message} ` + os.EOL
     );
   }

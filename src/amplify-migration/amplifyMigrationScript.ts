@@ -23,11 +23,7 @@ import { modifyTagAttribute } from "./jsDomUtils";
 import { getRawPermalink } from "./jsDomUtils";
 import { updateFilesUploadsPath } from "./jsDomUtils";
 import { isRepoMigrated, pushChangesToRemote } from "./githubUtils";
-import {
-  PERMALINK_REGEX,
-  REPOS_WITH_ERRORS,
-  REPOS_WITH_NO_CODE,
-} from "./constants";
+import { PERMALINK_REGEX, LOGS_FILE, SQL_COMMANDS_FILE } from "./constants";
 import { changePermalinksInMdFile } from "./mdFileUtils";
 import { checkoutBranch } from "./githubUtils";
 import { isRepoEmpty } from "./githubUtils";
@@ -90,13 +86,22 @@ async function main() {
     .find((arg) => arg.startsWith("-repo-path="))
     ?.split("=")[1];
   const listOfRepos: [string, string][] = await readCsvFile(filePath);
+
+  // delineate logs for easier separation of runs
+  const delineateString = `------------------${new Date().toLocaleString()}------------------`;
+  fs.appendFileSync(path.join(__dirname, LOGS_FILE), delineateString + os.EOL);
+  fs.appendFileSync(
+    path.join(__dirname, SQL_COMMANDS_FILE),
+    delineateString + os.EOL
+  );
+
   listOfRepos.map(async ([repoName, name]) => {
     try {
       if (await isRepoEmpty(repoName)) {
         console.info(`Skipping ${repoName} as it has no code`);
         // write repos that have no code to a file
         fs.appendFileSync(
-          path.join(__dirname, REPOS_WITH_NO_CODE),
+          path.join(__dirname, LOGS_FILE),
           `${repoName} ` + os.EOL
         );
         return;
@@ -121,7 +126,7 @@ async function main() {
       console.error(message);
       // append this to a file
       fs.appendFileSync(
-        path.join(__dirname, REPOS_WITH_ERRORS),
+        path.join(__dirname, LOGS_FILE),
         `${message} ` + os.EOL
       );
     }
@@ -276,6 +281,10 @@ async function modifyPermalinks({
 
   const commitMessage = "chore(Amplify-Migration): Update permalinks in files";
   await simpleGit(repoPath).commit(commitMessage);
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${repoName}: Commit ${commitMessage} has been made ` + os.EOL
+  );
 }
 
 async function changePermalinksReference(
@@ -286,8 +295,11 @@ async function changePermalinksReference(
 ) {
   const setOfAllDocumentsPath = await getAllDocumentsPath(repoPath);
 
-  await simpleGit(repoPath).commit(
-    "feat(Amplify-Migration): Update files to lowercase"
+  const commitMessage = "chore(Amplify-Migration): Update permalinks in files";
+  await simpleGit(repoPath).commit(commitMessage);
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${currentRepoName}: Commit ${commitMessage} has been made ` + os.EOL
   );
 
   // NOTE: do not use map here, as we want to wait for each file to be processed
@@ -417,7 +429,7 @@ export async function changeFileContent({
   const yamlContents = yamlDocument?.contents as YAML.YAMLMap.Parsed;
 
   fileContent = await changeLinksInYml({
-    yamlContents,
+    yamlNode: yamlContents,
     fileContent,
     changedPermalinks,
     currentRepoName,
@@ -502,8 +514,12 @@ async function updateConfigYml(appId: string, repoPath: string) {
   await fs.promises.writeFile(configFilePath, configYmlContent);
 
   await simpleGit(repoPath).add(configFilePath);
-  await simpleGit(repoPath).commit(
-    "chore(Amplify-Migration): update config.yml file"
+  const commitMessage = "chore(Amplify-Migration): update config.yml file";
+  await simpleGit(repoPath).commit(commitMessage);
+  // log in a file for manual checking after the migration
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${repoPath}: Commit ${commitMessage} has been made \n`
   );
 }
 
@@ -518,9 +534,13 @@ SELECT '${repoName}', 'https://github.com/isomerpages/${repoName}', NOW(), NOW()
 INSERT INTO deployments (production_url, staging_url, hosting_id, created_at, updated_at, site_id) 
 SELECT 'https://master.${appId}.amplifyapp.com','https://staging.${appId}.amplifyapp.com', '${appId}', NOW(), NOW(),id 
 FROM sites WHERE name = '${name}'; \n`;
-  const sqlFile = path.join(__dirname, "sqlcommands.txt");
+  const sqlFile = path.join(__dirname, SQL_COMMANDS_FILE);
   // append sql commands to file
   await fs.promises.appendFile(sqlFile, sqlCommands);
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${repoName}: SQL commands appended to ${sqlFile} \n`
+  );
 }
 
 main();
