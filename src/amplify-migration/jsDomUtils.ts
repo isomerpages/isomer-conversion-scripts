@@ -4,7 +4,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { errorMessage } from "./errorMessage";
-import { REPOS_WITH_ERRORS } from "./constants";
+import { LOGS_FILE } from "./constants";
 
 type TagAttribute<T extends "a" | "img"> = T extends "a"
   ? { tagName: "a"; attribute: "href" }
@@ -20,7 +20,7 @@ export async function modifyTagAttribute({
   dom: JSDOM;
   tagAttribute: TagAttribute<"a" | "img">;
   changedPermalinks: { [oldPermalink: string]: string };
-  fileContent:string
+  fileContent: string;
   setOfAllDocumentsPath: Set<string>;
   normalisedUrls: Set<string>;
   currentRepoName: string;
@@ -29,7 +29,6 @@ export async function modifyTagAttribute({
   dom: JSDOM;
   changedPermalinks: { [oldPermalink: string]: string };
 }> {
-
   for (const tag of dom.window.document.querySelectorAll(tagName)) {
     // replace permalinks with lowercase and in changedPermalinks
     if (attribute === "href") {
@@ -54,16 +53,14 @@ export async function modifyTagAttribute({
         );
       }
 
-      const { fileContent: href } =
-        await updateFilesUploadsPath(
-          a.href,
-          setOfAllDocumentsPath,
-          currentRepoName
-        );
+      const { fileContent: href } = await updateFilesUploadsPath(
+        a.href,
+        setOfAllDocumentsPath,
+        currentRepoName
+      );
       if (a.href !== href) {
-        fileContent = fileContent.replace(a.href, href)
+        fileContent = fileContent.replace(a.href, href);
       }
-
     } else if (attribute === "src") {
       /**
        * Ideally this code should be const img = tag as HTMLImageElement;
@@ -82,14 +79,13 @@ export async function modifyTagAttribute({
         );
       }
 
-      const { fileContent:src } =
-        await updateFilesUploadsPath(
-          img.src,
-          setOfAllDocumentsPath,
-          currentRepoName
-        );
+      const { fileContent: src } = await updateFilesUploadsPath(
+        img.src,
+        setOfAllDocumentsPath,
+        currentRepoName
+      );
       if (img.src !== src) {
-        fileContent = fileContent.replace(img.src, src)
+        fileContent = fileContent.replace(img.src, src);
       }
     }
   }
@@ -132,53 +128,54 @@ export async function updateFilesUploadsPath(
   setOfAllDocumentsPath: Set<string>,
   currentRepoName: string
 ): Promise<{ fileContent: string }> {
-
-  
-   /** 
-    * NOTE: We don't want to change URLs of external links, eg https://www.google.com
-    * We also want to capture relative links, eg ../files/abc.pdf
-    */ 
-  const fileRegexWithTrailingSlash = /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//gi;
+  /**
+   * NOTE: We don't want to change URLs of external links, eg https://www.google.com
+   * We also want to capture relative links, eg ../files/abc.pdf
+   */
+  const fileRegexWithTrailingSlash =
+    /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//gi;
   const matches = fileContent.match(fileRegexWithTrailingSlash);
   if (matches) {
     for (const match of matches) {
-      
       // sanity checks that should have been already guaranteed by regex
-      assert(match.endsWith("/")); 
-      assert(match.startsWith("/")); 
+      assert(match.endsWith("/"));
+      assert(match.startsWith("/"));
 
       let newFilePath = match.slice(0, -1);
       fileContent = fileContent.replace(match, newFilePath);
     }
   }
 
-  /** 
-    * NOTE: We don't want to change URLs of external links, eg https://www.google.com
-    * We also want to capture relative links, eg ../files/abc.pdf
-    * WE modify them to be small casing, then report it
-    */ 
-  const fileRegex = /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/gi;
+  /**
+   * NOTE: We don't want to change URLs of external links, eg https://www.google.com
+   * We also want to capture relative links, eg ../files/abc.pdf
+   * WE modify them to be small casing, then report it
+   */
+  const fileRegex =
+    /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/gi;
   const fileMatches = fileContent.match(fileRegex);
   if (fileMatches) {
     for (const match of fileMatches) {
       const lowerCaseMatch = match.toLowerCase();
       fileContent = fileContent.replace(match, lowerCaseMatch);
-      let doesFileExist = false
+      let doesFileExist = false;
       for (const path of setOfAllDocumentsPath) {
-        if (path === lowerCaseMatch || decodeURIComponent(lowerCaseMatch) === path) {
+        if (
+          path === lowerCaseMatch ||
+          decodeURIComponent(lowerCaseMatch) === path
+        ) {
           doesFileExist = true;
           break;
         }
       }
       if (!doesFileExist) {
-      
         // log this in some file for manual checking after the migration
         const errorMessage: errorMessage = {
           message: `File ${fileContent} does not exist in the repo`,
           repoName: currentRepoName,
         };
         await fs.promises.appendFile(
-          path.join(__dirname, REPOS_WITH_ERRORS),
+          path.join(__dirname, LOGS_FILE),
           `${errorMessage.repoName}: ${errorMessage.message} ` + os.EOL
         );
       }
