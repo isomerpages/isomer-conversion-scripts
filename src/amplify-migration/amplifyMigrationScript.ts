@@ -62,6 +62,18 @@ function readCsvFile(
 }
 
 async function main() {
+  // check for all env vars first
+  if (
+    !process.env.GITHUB_ACCESS_TOKEN ||
+    !process.env.AWS_ACCESS_KEY_ID ||
+    !process.env.AWS_SECRET_ACCESS_KEY
+  ) {
+    console.error(
+      "Please provide all env vars: GITHUB_ACCESS_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY"
+    );
+    return;
+  }
+
   const args = process.argv.slice(2);
   const userIdString = args
     .find((arg) => arg.startsWith("-user-id="))
