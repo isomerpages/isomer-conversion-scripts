@@ -21,7 +21,7 @@ export async function modifyTagAttribute({
   tagAttribute: TagAttribute<"a" | "img">;
   changedPermalinks: { [oldPermalink: string]: string };
   fileContent: string;
-  setOfAllDocumentsPath: Set<string>;
+  setOfAllDocumentsPath: Set<Lowercase<string>>;
   normalisedUrls: Set<string>;
   currentRepoName: string;
 }): Promise<{
@@ -125,7 +125,7 @@ export function getRawPermalink(permalink: string) {
 
 export async function updateFilesUploadsPath(
   fileContent: string,
-  setOfAllDocumentsPath: Set<string>,
+  setOfAllDocumentsPath: Set<Lowercase<string>>,
   currentRepoName: string
 ): Promise<{ fileContent: string }> {
   /**

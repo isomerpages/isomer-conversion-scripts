@@ -27,7 +27,7 @@ import { PERMALINK_REGEX, LOGS_FILE, SQL_COMMANDS_FILE } from "./constants";
 import { changePermalinksInMdFile } from "./mdFileUtils";
 import { checkoutBranch } from "./githubUtils";
 import { isRepoEmpty } from "./githubUtils";
-import { changeLinksInYml } from "./yamlUtils";
+import { changeLinksInYml, parseYml } from "./yamlUtils";
 
 /**
  * Reading CSV file
@@ -106,8 +106,8 @@ async function main() {
         );
         return;
       }
-      const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
-      if (isRepoMigrated(repoPath)) {
+
+      if (await isRepoMigrated(repoName)) {
         console.info(`Skipping ${repoName} as it has already been migrated`);
         // write repos that have no code to a file
         fs.appendFileSync(
@@ -116,7 +116,7 @@ async function main() {
         );
         return;
       }
-      await migrateRepo(repoName, repoPath, name, userId);
+      await migrateRepo(repoName, name, userId);
     } catch (e) {
       const error: errorMessage = {
         message: `${e}`,
@@ -133,12 +133,8 @@ async function main() {
   });
 }
 
-async function migrateRepo(
-  repoName: string,
-  repoPath: string,
-  name: string,
-  userId: number
-) {
+async function migrateRepo(repoName: string, name: string, userId: number) {
+  const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
   const buildSpec = await readBuildSpec();
   const appId = await createAmplifyApp(repoName, buildSpec);
   const amplifyAppInfo: AmplifyAppInfo = {
@@ -181,9 +177,15 @@ async function generateRedirectsRules({ repoName, repoPath }: AmplifyAppInfo) {
       path.join(__dirname, `redirects_${repoName}.json`),
       JSON.stringify(json, null, 2)
     );
-    console.log("Redirects file converted to JSON");
+    await fs.promises.appendFile(
+      path.join(__dirname, LOGS_FILE),
+      `${repoName}: Redirects file converted to JSON ` + os.EOL
+    );
   } else {
-    console.log("_redirects file does not exist");
+    await fs.promises.appendFile(
+      path.join(__dirname, LOGS_FILE),
+      `${repoName}: _redirects file does not exist ` + os.EOL
+    );
   }
 }
 
@@ -348,14 +350,16 @@ async function changePermalinksReference(
 }
 
 export async function changeFileContent({
+  filePath,
   fileContent,
   changedPermalinks,
   setOfAllDocumentsPath,
   currentRepoName,
 }: {
+  filePath: string;
   fileContent: string;
   changedPermalinks: { [oldPermalink: string]: string };
-  setOfAllDocumentsPath: Set<string>;
+  setOfAllDocumentsPath: Set<Lowercase<string>>;
   currentRepoName: string;
 }) {
   // 3 different permalink patterns to take care of
@@ -389,6 +393,7 @@ export async function changeFileContent({
 
   // we want to be able to modify nested markdown links
   // eg. [![inline text](/images/someimage.jpg)](/images/somedoc.pdf)
+  // TODO: take care of edge case: [![blah](/images/blah.jpg){:style="width: 300px"}](https://blah.com)
   const markdownRegex = /(!?\[([^\]]*)\])?\(([^\s]*)\s*(".*")?\)/g;
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
@@ -409,27 +414,8 @@ export async function changeFileContent({
     fileContent = fileContent.replace(url, filepathContent);
   }
 
-  const yamlParser = YAML.parseAllDocuments(fileContent);
-
-  /**
-   * This is to handle the case where the yml file has multiple documents which are
-   * separated by document end marker lines, ie when the yaml content exists as the
-   * front matter in a .md file. Since we don't expect to have > 1 yml
-   * document in a single file, we will only process the first document. The other
-   * documents in this array are expected to be null.
-   */
-  const yamlDocument = yamlParser[0];
-
-  /**
-   * This is a safe cast as we expect the files to be of valid yaml syntax and not `null`.
-   * This represents a YAML mapping, which is a collection of key-value pairs. A mapping
-   * is represented by a colon (:) separating the key and value, and can contain any
-   * valid YAML node as a value.
-   */
-  const yamlContents = yamlDocument?.contents as YAML.YAMLMap.Parsed;
-
-  fileContent = await changeLinksInYml({
-    yamlNode: yamlContents,
+  fileContent = await parseYml({
+    filePath,
     fileContent,
     changedPermalinks,
     currentRepoName,
@@ -439,7 +425,9 @@ export async function changeFileContent({
   return { fileContent };
 }
 
-async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
+async function getAllDocumentsPath(
+  dirPath: string
+): Promise<Set<Lowercase<string>>> {
   const filePaths = new Set<string>();
 
   async function traverseDirectory(dir: string) {
@@ -491,7 +479,15 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
   const imagesRootDir = path.join(dirPath, "images");
   await traverseDirectory(imagesRootDir);
 
-  return filePaths;
+  /**
+   * This portion of code is added for verbosity
+   * + guarantee for type safety during assertion
+   */
+  const setOfAllDocumentsPath = new Set<Lowercase<string>>();
+  filePaths.forEach((filePath) => {
+    setOfAllDocumentsPath.add(filePath.toLowerCase() as Lowercase<string>);
+  });
+  return setOfAllDocumentsPath;
 }
 
 async function updateConfigYml(appId: string, repoPath: string) {
@@ -501,15 +497,23 @@ async function updateConfigYml(appId: string, repoPath: string) {
   let configYmlContent = await fs.promises.readFile(configFilePath, {
     encoding: "utf-8",
   });
-  configYmlContent = configYmlContent.replace(
-    /^staging:\s*https:\/\/.*$/gm,
-    `staging: https://staging.${appId}.amplifyapp.com/`
-  );
+  const stagingKeyExist = configYmlContent.includes("staging:");
+  const stagingMap = `staging: https://staging.${appId}.amplifyapp.com/`;
+  const prodMap = `prod: https://master.${appId}.amplifyapp.com/`;
+  if (stagingKeyExist) {
+    configYmlContent = configYmlContent.replace(
+      /^staging:\s*https:\/\/.*$/gm,
+      stagingMap
+    );
 
-  configYmlContent = configYmlContent.replace(
-    /^prod:\s*https:\/\/.*$/gm,
-    `prod: https://master.${appId}.amplifyapp.com/`
-  );
+    configYmlContent = configYmlContent.replace(
+      /^prod:\s*https:\/\/.*$/gm,
+      prodMap
+    );
+  } else {
+    // Add staging + prod key for legacy sites
+    configYmlContent = configYmlContent + stagingMap + "\n" + prodMap + "\n";
+  }
   // Write the modified yaml file back to disk
   await fs.promises.writeFile(configFilePath, configYmlContent);
 

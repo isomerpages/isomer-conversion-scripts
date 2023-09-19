@@ -12,6 +12,7 @@ export async function pushChangesToRemote({ repoPath }: AmplifyAppInfo) {
   await simpleGit(repoPath).deleteLocalBranch(BRANCH_NAME);
   console.info("Merge and delete of add-trailing-slash branch successful");
 }
+
 export async function checkoutBranch(repoPath: string, repoName: string) {
   if (fs.existsSync(repoPath)) {
     console.info(
@@ -32,12 +33,13 @@ export async function checkoutBranch(repoPath: string, repoName: string) {
    */
   const branches = await simpleGit(repoPath).branchLocal();
   if (branches.all.includes(BRANCH_NAME)) {
-    console.log("Branch already exists. Checking out branch.");
+    console.info("Branch already exists. Checking out branch.");
     await simpleGit(repoPath).checkout(BRANCH_NAME);
   } else {
     await simpleGit(repoPath).checkoutLocalBranch(BRANCH_NAME);
   }
 }
+
 export async function isRepoEmpty(repoName: string): Promise<boolean> {
   const octokit = new Octokit({
     auth: process.env.GITHUB_ACCESS_TOKEN,
@@ -62,8 +64,21 @@ export async function isRepoEmpty(repoName: string): Promise<boolean> {
   }
 }
 
-export function isRepoMigrated(repoPath: string): boolean {
-  // read the config.yml file
-  const configFile = fs.readFileSync(`${repoPath}/_config.yml`, "utf-8");
-  return configFile.includes(".amplifyapp.com");
+export async function isRepoMigrated(repoName: string): Promise<boolean> {
+  // read the config.yml file directly from github
+  // if the file contains .amplifyapp.com, then it is migrated
+  // else, it is not migrated
+  const octokit = new Octokit({
+    auth: process.env.GITHUB_ACCESS_TOKEN,
+  });
+  const result = await octokit.request(
+    `GET /repos/${ORGANIZATION_NAME}/${repoName}/contents/_config.yml`,
+    {
+      owner: ORGANIZATION_NAME,
+      repo: repoName,
+      path: `_config.yml`,
+    }
+  );
+  const content = Buffer.from(result.data.content, "base64").toString("ascii");
+  return content.includes(".amplifyapp.com");
 }
