@@ -27,6 +27,7 @@ Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9ba
 
 ### How to use
 
+0. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth
 1. Populate environment variables for the following
 
 - `GITHUB_ACCESS_TOKEN` (Github personal access token)
