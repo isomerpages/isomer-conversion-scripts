@@ -394,7 +394,9 @@ export async function changeFileContent({
   // we want to be able to modify nested markdown links
   // eg. [![inline text](/images/someimage.jpg)](/images/somedoc.pdf)
   // TODO: take care of edge case: [![blah](/images/blah.jpg){:style="width: 300px"}](https://blah.com)
-  const markdownRegex = /(!?\[([^\]]*)\])?\(([^\s]*)\s*(".*")?\)/g;
+  const outerLink = `(!?\\[([^\\]]*)\\])`;
+  const innerLink = `\\(([^\\s]*)\\s*(".*")?\\)`;
+  const markdownRegex = new RegExp(`${outerLink}${innerLink}`, "g");
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
   for (const match of markdownRelativeUrlMatches) {
