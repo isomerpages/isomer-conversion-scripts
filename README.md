@@ -42,6 +42,17 @@ Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9ba
 7. Check to see if there are any errors being reported in the `repos-with-errors.txt`.
 8. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly)
 
+### Notes
+
+Certain special characters in file titles (e.g. `Å`) cannot be handled properly by the local file system - this will result in the following error:
+
+```
+Error occurred for <repoName>: Error: error: The following untracked working tree files would be overwritten by checkout:
+<fileName>
+```
+
+These files will need to be manually modified before the script can be run again. Ensure that all references to this file are also updated with the simplified name.
+
 ### Email login migration
 
 See [here](src/emailLogin/README.md) for the specific instructions to run the email login migration.
