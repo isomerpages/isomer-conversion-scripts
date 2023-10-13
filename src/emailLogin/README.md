@@ -29,12 +29,26 @@ Ideally, this should be done by the designated team account, not with your perso
 
 2. Next, run the following command: `npm run jump:<staging | prod>`. This sets up the port-forwarding service.
 
-3. In a separate terminal, run `runMigration.js` with the following command:
+3. Populate the `repos.txt` file with the list of repos, separated by `,`
+
+4. In a separate terminal, run `runMigration.js` with the following command:
 
 ```
-node runMigration.js <repo name>
+node runMigration.js
 ```
 
 This adds the new site member entries and also outputs texts file in `/<repo name>/[contributors | repos | insertQueries].txt` with the retrieved information, and documents the insert queries run. Github write access for the site members will also be removed.
 
-4. Fill in the appropriate form (prod: https://form.gov.sg/6513ae794fec5f0012b7f8ad) to clone the repo on our EFS.
+5. Fill in the appropriate form (prod: https://form.gov.sg/6513ae794fec5f0012b7f8ad) to clone the repo on our EFS.
+
+## Standalone github
+
+1. Follow steps 1-2 as above.
+
+2. Populate the `reponames.csv` file with the list of repos, separated by new lines
+
+3. In a separate terminal, run `getContributors.js` with the following command:
+
+```
+node getContributors.js
+```
