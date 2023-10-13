@@ -2,13 +2,27 @@ const axios = require('axios');
 const fs = require('fs');
 
 const { getDb } = require('../../db/index');
+const { removeGithubAccess } = require('./removeGithubAccess');
+const { logError } = require('./logUtils');
 
 const { GITHUB_ACCESS_TOKEN, GITHUB_ORG_NAME: ISOMER_GITHUB_ORG_NAME } = process.env;
 
 const ISOMER_USERS = ['isomeradmin', 'rc-davis', 'lamkeewei', 'pallani', 'LoneRifle', 'prestonlimlianjie', 'alexanderleegs', 'lisatjide', 'kwajiehao', 'gweiying', 'seaerchin', 'isomer-demo', 'NatMaeTan', ' jacksonOGP', 'chienlinggg', 'kathleenkhy', 'joshuajunmingt', 'audreytcy', 'yanjunquek', 'chloe-opengovsg', 'shazlithebestie', 'lennardl', 'oliverli', 'taufiq'];
 
-// name of repo
-const REPO = process.argv[2];
+const REPO_LIST_PATH = './repos.txt';
+
+/**
+ * Reading CSV file
+ * @param filePath if undefined, list-of-repos.csv
+ *                 in the current directory will be used
+ * @returns list of repos and their human friendly names
+ */
+function getReposToMigrate(
+  filePath,
+) {
+  const data = fs.readFileSync(filePath, 'utf8');
+  return data.split(',');
+}
 
 const writeMigrationInfoToRecords = async (site, contributorRecord, repoRecord, insertRecord) => {
   try {
@@ -24,7 +38,7 @@ const writeMigrationInfoToRecords = async (site, contributorRecord, repoRecord, 
     fs.writeFileSync(`${dirPath}/repos.txt`, repoRecord);
     fs.writeFileSync(`${dirPath}/insertQueries.txt`, insertRecord);
   } catch (err) {
-    console.error(`The following error was encountered while migrating site ${site}: ${err}`);
+    logError(`The following error was encountered while writing records for site ${site}: ${err}`);
   }
 };
 
@@ -39,8 +53,8 @@ const getSiteAndContributors = async (site, dbClient) => {
       },
     );
     if (!respData) {
-      console.error(`${site} has no members in the team - please check that the repo name and team name are the same`);
-      return;
+      logError(`${site} has no members in the team - please check that the repo name and team name are the same`);
+      throw new Error();
     }
     const contributorNames = respData
       .map(({ login }) => login)
@@ -56,8 +70,8 @@ const getSiteAndContributors = async (site, dbClient) => {
     console.log(repoData);
     if (repoData.length !== 1) {
       // We expect to see exactly one entry for this repo name - any other number of entries is an error
-      console.error(`${site} has multiple matching entries or no matching entries - please check entry again`);
-      return;
+      logError(`${site} has multiple matching entries or no matching entries - please check entry again`);
+      throw new Error();
     }
     const repoId = repoData[0].id;
 
@@ -85,27 +99,32 @@ const getSiteAndContributors = async (site, dbClient) => {
       siteMemberValues.push(`(${userId}, ${repoId}, '${userType}')`);
     });
     if (siteMemberValues.length === 0) {
-      console.log(`${site} has no CMS editors`);
-      return;
+      logError(`${site} has no CMS editors`);
+      throw new Error();
     }
     const insertQuery = `INSERT INTO "site_members" (user_id, site_id, role) VALUES\n${siteMemberValues.join(',\n')};`;
     await dbClient.query(insertQuery);
     console.log(insertQuery);
     await writeMigrationInfoToRecords(site, userData.map((userInfo) => JSON.stringify(userInfo)).join('\n'), JSON.stringify(repoData[0]), insertQuery);
   } catch (err) {
-    console.error(`The following error occured while migrating ${site}: ${err}`);
+    logError(`The following error occured while migrating ${site}: ${err}`);
     throw err;
   }
 };
 
 const main = async () => {
+  const repos = getReposToMigrate(REPO_LIST_PATH);
   const dbClient = await getDb();
-
-  try {
-    await getSiteAndContributors(REPO, dbClient);
-  } finally {
-    dbClient.end();
+  logError(`=================${new Date()}=================`);
+  for (const repo of repos) {
+    try {
+      await getSiteAndContributors(repo, dbClient);
+      await removeGithubAccess(repo);
+    } catch (e) {
+      continue;
+    }
   }
+  dbClient.end();
 };
 
 main();

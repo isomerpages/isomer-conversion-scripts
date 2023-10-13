@@ -3,8 +3,7 @@ const fs = require('fs');
 
 const { Octokit } = require('octokit');
 
-// name of repo
-const REPO = process.argv[2];
+const { logError } = require('./logUtils');
 
 const { GITHUB_ACCESS_TOKEN, GITHUB_ORG_NAME } = process.env;
 
@@ -23,7 +22,7 @@ const removeGithubAccess = async (site) => {
       },
     );
     if (!respData) {
-      console.error(`${site} has no members in the team - please check that the repo name and team name are the same`);
+      logError(`${site} has no members in the team - please check that the repo name and team name are the same`);
       return;
     }
     const contributorNames = respData
@@ -41,12 +40,10 @@ const removeGithubAccess = async (site) => {
     await octokit.request(`DELETE /orgs/${GITHUB_ORG_NAME}/teams/${site}/repos/${GITHUB_ORG_NAME}/${site}`);
     console.log(`Removing team access for ${site}`);
   } catch (err) {
-    console.error(`The following error was encountered while migrating site ${site}: ${err}`);
+    logError(`The following error was encountered while migrating site ${site}: ${err}`);
   }
 };
 
-const main = async () => {
-  await removeGithubAccess(REPO);
+module.exports = {
+  removeGithubAccess,
 };
-
-main();

@@ -35,10 +35,6 @@ Ideally, this should be done by the designated team account, not with your perso
 node runMigration.js <repo name>
 ```
 
-This adds the new site member entries and also outputs texts file in `/<repo name>/[contributors | repos | insertQueries].txt` with the retrieved information, and insert query run.
+This adds the new site member entries and also outputs texts file in `/<repo name>/[contributors | repos | insertQueries].txt` with the retrieved information, and documents the insert queries run. Github write access for the site members will also be removed.
 
-4. Finally, to prevent users from accessing github to edit their sites directly, remove write access of the Github team with the following command:
-
-```
-node removeGithubAccess.js <repo name>
-```
+4. Fill in the appropriate form (prod: https://form.gov.sg/6513ae794fec5f0012b7f8ad) to clone the repo on our EFS.
