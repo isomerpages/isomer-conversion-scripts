@@ -27,9 +27,11 @@ Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9ba
 
 ### How to use
 
+1. Create codespaces durectly from github by going to `https://github.com/isomerpages/isomer-conversion-scripts` -> "code" -> codespaces -> create codespaces on staging.
+
 1. Create codespaces directly from github by going to `https://github.com/isomerpages/isomer-conversion-scripts` -> "code" -> codespaces -> create codespaces on staging.
 
-2. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth. Quick way to check this is by running `gh auth status`, you should see something like this
+1. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth. Quick way to check this is by running `gh auth status`, you should see something like this
 
 ```
 ✓ Logged in to github.com as kishore03109 (GITHUB_TOKEN)
