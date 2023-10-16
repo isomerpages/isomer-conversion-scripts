@@ -6,6 +6,7 @@ import {
 } from "@aws-sdk/client-amplify";
 import path from "path";
 import fs from "fs";
+import { LOGS_FILE } from "./constants";
 
 const accessKey = process.env.AWS_ACCESS_KEY_ID;
 const secretKey = process.env.AWS_SECRET_ACCESS_KEY;
@@ -93,5 +94,12 @@ export async function createAmplifyApp(
   if (!app || !app.appId) {
     throw new Error("Amplify App was not created");
   }
+
+  // log in logs file
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${repo_name}: Amplify with ${app.appId} created\n`
+  );
+
   return app.appId;
 }

@@ -27,6 +27,7 @@ Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9ba
 
 ### How to use
 
+0. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth
 1. Populate environment variables for the following
 
 - `GITHUB_ACCESS_TOKEN` (Github personal access token)
@@ -39,8 +40,8 @@ Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9ba
 4. Navigate to `src/amplify-migration/sqlcommands.txt`
 5. Copy over the appended commands in the file and run them on production DB
 6. If a redirects\_<repo-name>.json is created, copy and paste the file over to the corresponding Amplify app under the `Rewrites and redirects` tab name.
-7. Check to see if there are any errors being reported in the `repos-with-errors.txt`.
-8. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly)
+7. Check to see if there are any errors being reported in the `logs.txt` file.
+8. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly), check for any unexpected uncommitted `.md` file changes in the repo directory (/isomer-migrations/<repo-name>).
 
 ### Notes
 

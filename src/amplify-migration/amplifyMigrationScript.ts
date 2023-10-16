@@ -22,16 +22,12 @@ import YAML from "yaml";
 import { modifyTagAttribute } from "./jsDomUtils";
 import { getRawPermalink } from "./jsDomUtils";
 import { updateFilesUploadsPath } from "./jsDomUtils";
-import { pushChangesToRemote } from "./githubUtils";
-import {
-  PERMALINK_REGEX,
-  REPOS_WITH_ERRORS,
-  REPOS_WITH_NO_CODE,
-} from "./constants";
+import { isRepoMigrated, pushChangesToRemote } from "./githubUtils";
+import { PERMALINK_REGEX, LOGS_FILE, SQL_COMMANDS_FILE } from "./constants";
 import { changePermalinksInMdFile } from "./mdFileUtils";
 import { checkoutBranch } from "./githubUtils";
 import { isRepoEmpty } from "./githubUtils";
-import { changeLinksInYml } from "./yamlUtils";
+import { changeLinksInYml, parseYml } from "./yamlUtils";
 
 /**
  * Reading CSV file
@@ -62,6 +58,18 @@ function readCsvFile(
 }
 
 async function main() {
+  // check for all env vars first
+  if (
+    !process.env.GITHUB_ACCESS_TOKEN ||
+    !process.env.AWS_ACCESS_KEY_ID ||
+    !process.env.AWS_SECRET_ACCESS_KEY
+  ) {
+    console.error(
+      "Please provide all env vars: GITHUB_ACCESS_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY"
+    );
+    return;
+  }
+
   const args = process.argv.slice(2);
   const userIdString = args
     .find((arg) => arg.startsWith("-user-id="))
@@ -78,14 +86,33 @@ async function main() {
     .find((arg) => arg.startsWith("-repo-path="))
     ?.split("=")[1];
   const listOfRepos: [string, string][] = await readCsvFile(filePath);
+
+  // delineate logs for easier separation of runs
+  const delineateString = `------------------${new Date().toLocaleString()}------------------`;
+  fs.appendFileSync(path.join(__dirname, LOGS_FILE), delineateString + os.EOL);
+  fs.appendFileSync(
+    path.join(__dirname, SQL_COMMANDS_FILE),
+    delineateString + os.EOL
+  );
+
   listOfRepos.map(async ([repoName, name]) => {
     try {
       if (await isRepoEmpty(repoName)) {
         console.info(`Skipping ${repoName} as it has no code`);
         // write repos that have no code to a file
         fs.appendFileSync(
-          path.join(__dirname, REPOS_WITH_NO_CODE),
+          path.join(__dirname, LOGS_FILE),
           `${repoName} ` + os.EOL
+        );
+        return;
+      }
+
+      if (await isRepoMigrated(repoName)) {
+        console.info(`Skipping ${repoName} as it has already been migrated`);
+        // write repos that have no code to a file
+        fs.appendFileSync(
+          path.join(__dirname, LOGS_FILE),
+          `${repoName} was already migrated` + os.EOL
         );
         return;
       }
@@ -99,7 +126,7 @@ async function main() {
       console.error(message);
       // append this to a file
       fs.appendFileSync(
-        path.join(__dirname, REPOS_WITH_ERRORS),
+        path.join(__dirname, LOGS_FILE),
         `${message} ` + os.EOL
       );
     }
@@ -108,7 +135,6 @@ async function main() {
 
 async function migrateRepo(repoName: string, name: string, userId: number) {
   const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
-
   const buildSpec = await readBuildSpec();
   const appId = await createAmplifyApp(repoName, buildSpec);
   const amplifyAppInfo: AmplifyAppInfo = {
@@ -151,9 +177,15 @@ async function generateRedirectsRules({ repoName, repoPath }: AmplifyAppInfo) {
       path.join(__dirname, `redirects_${repoName}.json`),
       JSON.stringify(json, null, 2)
     );
-    console.log("Redirects file converted to JSON");
+    await fs.promises.appendFile(
+      path.join(__dirname, LOGS_FILE),
+      `${repoName}: Redirects file converted to JSON ` + os.EOL
+    );
   } else {
-    console.log("_redirects file does not exist");
+    await fs.promises.appendFile(
+      path.join(__dirname, LOGS_FILE),
+      `${repoName}: _redirects file does not exist ` + os.EOL
+    );
   }
 }
 
@@ -251,6 +283,10 @@ async function modifyPermalinks({
 
   const commitMessage = "chore(Amplify-Migration): Update permalinks in files";
   await simpleGit(repoPath).commit(commitMessage);
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${repoName}: Commit ${commitMessage} has been made ` + os.EOL
+  );
 }
 
 async function changePermalinksReference(
@@ -261,8 +297,11 @@ async function changePermalinksReference(
 ) {
   const setOfAllDocumentsPath = await getAllDocumentsPath(repoPath);
 
-  await simpleGit(repoPath).commit(
-    "feat(Amplify-Migration): Update files to lowercase"
+  const commitMessage = "chore(Amplify-Migration): Update permalinks in files";
+  await simpleGit(repoPath).commit(commitMessage);
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${currentRepoName}: Commit ${commitMessage} has been made ` + os.EOL
   );
 
   // NOTE: do not use map here, as we want to wait for each file to be processed
@@ -311,14 +350,16 @@ async function changePermalinksReference(
 }
 
 export async function changeFileContent({
+  filePath,
   fileContent,
   changedPermalinks,
   setOfAllDocumentsPath,
   currentRepoName,
 }: {
+  filePath: string;
   fileContent: string;
   changedPermalinks: { [oldPermalink: string]: string };
-  setOfAllDocumentsPath: Set<string>;
+  setOfAllDocumentsPath: Set<Lowercase<string>>;
   currentRepoName: string;
 }) {
   // 3 different permalink patterns to take care of
@@ -350,7 +391,12 @@ export async function changeFileContent({
     currentRepoName,
   }));
 
-  const markdownRegex = /\[(.*?)\]\((.*?)\)/g;
+  // we want to be able to modify nested markdown links
+  // eg. [![inline text](/images/someimage.jpg)](/images/somedoc.pdf)
+  // TODO: take care of edge case: [![blah](/images/blah.jpg){:style="width: 300px"}](https://blah.com)
+  const outerLink = `(!?\\[([^\\]]*)\\])`;
+  const innerLink = `\\(([^\\s]*)\\s*(".*")?\\)`;
+  const markdownRegex = new RegExp(`${outerLink}${innerLink}`, "g");
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
   for (const match of markdownRelativeUrlMatches) {
@@ -370,27 +416,8 @@ export async function changeFileContent({
     fileContent = fileContent.replace(url, filepathContent);
   }
 
-  const yamlParser = YAML.parseAllDocuments(fileContent);
-
-  /**
-   * This is to handle the case where the yml file has multiple documents which are
-   * separated by document end marker lines, ie when the yaml content exists as the
-   * front matter in a .md file. Since we don't expect to have > 1 yml
-   * document in a single file, we will only process the first document. The other
-   * documents in this array are expected to be null.
-   */
-  const yamlDocument = yamlParser[0];
-
-  /**
-   * This is a safe cast as we expect the files to be of valid yaml syntax and not `null`.
-   * This represents a YAML mapping, which is a collection of key-value pairs. A mapping
-   * is represented by a colon (:) separating the key and value, and can contain any
-   * valid YAML node as a value.
-   */
-  const yamlContents = yamlDocument?.contents as YAML.YAMLMap.Parsed;
-
-  fileContent = await changeLinksInYml({
-    yamlContents,
+  fileContent = await parseYml({
+    filePath,
     fileContent,
     changedPermalinks,
     currentRepoName,
@@ -400,7 +427,9 @@ export async function changeFileContent({
   return { fileContent };
 }
 
-async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
+async function getAllDocumentsPath(
+  dirPath: string
+): Promise<Set<Lowercase<string>>> {
   const filePaths = new Set<string>();
 
   async function traverseDirectory(dir: string) {
@@ -452,7 +481,15 @@ async function getAllDocumentsPath(dirPath: string): Promise<Set<string>> {
   const imagesRootDir = path.join(dirPath, "images");
   await traverseDirectory(imagesRootDir);
 
-  return filePaths;
+  /**
+   * This portion of code is added for verbosity
+   * + guarantee for type safety during assertion
+   */
+  const setOfAllDocumentsPath = new Set<Lowercase<string>>();
+  filePaths.forEach((filePath) => {
+    setOfAllDocumentsPath.add(filePath.toLowerCase() as Lowercase<string>);
+  });
+  return setOfAllDocumentsPath;
 }
 
 async function updateConfigYml(appId: string, repoPath: string) {
@@ -462,21 +499,33 @@ async function updateConfigYml(appId: string, repoPath: string) {
   let configYmlContent = await fs.promises.readFile(configFilePath, {
     encoding: "utf-8",
   });
-  configYmlContent = configYmlContent.replace(
-    /^staging:\s*https:\/\/.*$/gm,
-    `staging: https://staging.${appId}.amplifyapp.com/`
-  );
+  const stagingKeyExist = configYmlContent.includes("staging:");
+  const stagingMap = `staging: https://staging.${appId}.amplifyapp.com/`;
+  const prodMap = `prod: https://master.${appId}.amplifyapp.com/`;
+  if (stagingKeyExist) {
+    configYmlContent = configYmlContent.replace(
+      /^staging:\s*https:\/\/.*$/gm,
+      stagingMap
+    );
 
-  configYmlContent = configYmlContent.replace(
-    /^prod:\s*https:\/\/.*$/gm,
-    `prod: https://master.${appId}.amplifyapp.com/`
-  );
+    configYmlContent = configYmlContent.replace(
+      /^prod:\s*https:\/\/.*$/gm,
+      prodMap
+    );
+  } else {
+    // Add staging + prod key for legacy sites
+    configYmlContent = configYmlContent + stagingMap + "\n" + prodMap + "\n";
+  }
   // Write the modified yaml file back to disk
   await fs.promises.writeFile(configFilePath, configYmlContent);
 
   await simpleGit(repoPath).add(configFilePath);
-  await simpleGit(repoPath).commit(
-    "chore(Amplify-Migration): update config.yml file"
+  const commitMessage = "chore(Amplify-Migration): update config.yml file";
+  await simpleGit(repoPath).commit(commitMessage);
+  // log in a file for manual checking after the migration
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${repoPath.split("/").pop()}: Commit ${commitMessage} has been made \n`
   );
 }
 
@@ -491,9 +540,13 @@ SELECT '${repoName}', 'https://github.com/isomerpages/${repoName}', NOW(), NOW()
 INSERT INTO deployments (production_url, staging_url, hosting_id, created_at, updated_at, site_id) 
 SELECT 'https://master.${appId}.amplifyapp.com','https://staging.${appId}.amplifyapp.com', '${appId}', NOW(), NOW(),id 
 FROM sites WHERE name = '${name}'; \n`;
-  const sqlFile = path.join(__dirname, "sqlcommands.txt");
+  const sqlFile = path.join(__dirname, SQL_COMMANDS_FILE);
   // append sql commands to file
   await fs.promises.appendFile(sqlFile, sqlCommands);
+  await fs.promises.appendFile(
+    path.join(__dirname, LOGS_FILE),
+    `${repoName}: SQL commands appended to ${sqlFile} \n`
+  );
 }
 
 main();

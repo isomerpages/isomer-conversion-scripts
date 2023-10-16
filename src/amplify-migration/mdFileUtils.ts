@@ -12,13 +12,14 @@ export async function changePermalinksInMdFile({
   filePath: string;
   repoPath: string;
   changedPermalinks: { [key: string]: string };
-  setOfAllDocumentsPath: Set<string>;
+  setOfAllDocumentsPath: Set<Lowercase<string>>;
   currentRepoName: string;
 }) {
   let fileContent = await fs.promises.readFile(filePath, "utf-8");
   const originalFileContent = fileContent;
 
   ({ fileContent } = await changeFileContent({
+    filePath,
     fileContent,
     changedPermalinks,
     setOfAllDocumentsPath,
