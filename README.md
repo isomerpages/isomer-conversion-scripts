@@ -26,22 +26,29 @@ node migrationScript.js <repo name>
 Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9baff55ef4aebbe9f472fadf5a096?pvs=4
 
 ### How to use
+1. Create codespaces durectly from github by going to `https://github.com/isomerpages/isomer-conversion-scripts` -> "code" -> codespaces -> create codespaces on staging.
 
-0. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth
-1. Populate environment variables for the following
+2. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth. Quick way to check this is by running `gh auth status`, you should see something like this
+```
+✓ Logged in to github.com as kishore03109 (GITHUB_TOKEN)
+  ✓ Git operations for github.com configured to use https protocol.
+  ✓ Token: g************************************
+```
+
+3. Populate environment variables for the following
 
 - `GITHUB_ACCESS_TOKEN` (Github personal access token)
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-1. Navigate to src/amplify-migration/list-of-repos.csv
-2. Populate the csv file with the desired values
-3. Run `npm run amplify:migrate -- -user-id=<user-id>` in the command line. If you wish to use another CSV file, run `npm run amplify:migrate -- -user-id=457 -repo-path=<path-to-csv>`
-4. Navigate to `src/amplify-migration/sqlcommands.txt`
-5. Copy over the appended commands in the file and run them on production DB
-6. If a redirects\_<repo-name>.json is created, copy and paste the file over to the corresponding Amplify app under the `Rewrites and redirects` tab name.
-7. Check to see if there are any errors being reported in the `logs.txt` file.
-8. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly), check for any unexpected uncommitted `.md` file changes in the repo directory (/isomer-migrations/<repo-name>).
+4. Navigate to src/amplify-migration/list-of-repos.csv
+5. Populate the csv file with the desired values
+6. Run `npm run amplify:migrate -- -user-id=<user-id>` in the command line. If you wish to use another CSV file, run `npm run amplify:migrate -- -user-id=457 -repo-path=<path-to-csv>`
+7. Navigate to `src/amplify-migration/sqlcommands.txt`
+8. Copy over the appended commands in the file and run them on production DB
+9. If a redirects\_<repo-name>.json is created, copy and paste the file over to the corresponding Amplify app under the `Rewrites and redirects` tab name.
+10. Check to see if there are any errors being reported in the `logs.txt` file.
+11. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly), check for any unexpected uncommitted `.md` file changes in the repo directory (/isomer-migrations/<repo-name>).
 
 ### Notes
 
