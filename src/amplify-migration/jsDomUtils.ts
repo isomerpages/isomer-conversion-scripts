@@ -4,7 +4,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { errorMessage } from "./errorMessage";
-import { LOGS_FILE } from "./constants";
+import { LOGS_FILE, fileExtensionsRegex } from "./constants";
 
 type TagAttribute<T extends "a" | "img"> = T extends "a"
   ? { tagName: "a"; attribute: "href" }
@@ -132,8 +132,10 @@ export async function updateFilesUploadsPath(
    * NOTE: We don't want to change URLs of external links, eg https://www.google.com
    * We also want to capture relative links, eg ../files/abc.pdf
    */
-  const fileRegexWithTrailingSlash =
-    /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//gi;
+  const fileRegexWithTrailingSlash = new RegExp(
+    `(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(${fileExtensionsRegex})\/`,
+    "gi"
+  );
   const matches = fileContent.match(fileRegexWithTrailingSlash);
   if (matches) {
     for (const match of matches) {
@@ -151,8 +153,11 @@ export async function updateFilesUploadsPath(
    * We also want to capture relative links, eg ../files/abc.pdf
    * WE modify them to be small casing, then report it
    */
-  const fileRegex =
-    /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/gi;
+  const fileRegex = new RegExp(
+    `(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(${fileExtensionsRegex})`,
+    "gi"
+  );
+
   const fileMatches = fileContent.match(fileRegex);
   if (fileMatches) {
     for (const match of fileMatches) {

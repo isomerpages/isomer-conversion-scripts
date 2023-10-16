@@ -54,6 +54,20 @@ Error occurred for <repoName>: Error: error: The following untracked working tre
 
 These files will need to be manually modified before the script can be run again. Ensure that all references to this file are also updated with the simplified name.
 
+#### Repair mode
+
+As eng, there were multiple times where we faced issues with the previous scripts, and things went wrong somewhere. To enable eng to improve velocity, this scrip also has a repair mode. When this is set to true, the repo will NOT
+
+1. create an amplify app
+2. not update any staging and master branches of the amplify app
+3. will make commits to the repo locally and merge them to the staging branch, but there will not be any pushes to remote
+4. not update the SQL commands
+
+The sole reason for this should be used for debugging files, and when there exists a large number of files to debug.
+
+To run this, run
+`npm run amplify:migrate -- -user-id=<user-id> -repair-mode=true` in the command line.
+
 ### Email login migration
 
 See [here](src/emailLogin/README.md) for the specific instructions to run the email login migration.
