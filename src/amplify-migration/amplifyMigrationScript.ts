@@ -149,7 +149,9 @@ async function migrateRepo(
   userId: number,
   repairMode: boolean
 ) {
-  const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
+  const pwd = process.cwd();
+
+  const repoPath = path.join(`${pwd}/../${repoName}`)
 
   if (!repairMode) {
     const buildSpec = await readBuildSpec();
