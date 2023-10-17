@@ -46,14 +46,6 @@ export async function changeContentInYamlFile(
     filePath = newPermalink;
   }
 
-  const isFileAsset = fileExtensionsRegex
-    .split("|")
-    .map((ext) => `.${ext}`)
-    .find((ext) => filePath.includes(ext));
-  if (!isFileAsset) {
-    // This could just be a link to the page
-    return fileContent;
-  }
   // YAML does not seem to have a way to update the value of a key in place
   // We just mutate all to lowercase to not care about encoding. Then we report if image is not found
   // rather than programmatically fixing something that we are not 100% sure of.
