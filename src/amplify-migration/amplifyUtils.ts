@@ -103,3 +103,11 @@ export async function createAmplifyApp(
 
   return app.appId;
 }
+
+export function normaliseUrlsForAmplify(filePath: string) {
+  console.log(filePath);
+  if (filePath.startsWith("images/") || filePath.startsWith("files/")) {
+    return `/${filePath.toLocaleLowerCase()}`;
+  }
+  return filePath.toLocaleLowerCase();
+}

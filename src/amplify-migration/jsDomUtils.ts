@@ -5,6 +5,7 @@ import os from "os";
 import path from "path";
 import { errorMessage } from "./errorMessage";
 import { LOGS_FILE, fileExtensionsRegex } from "./constants";
+import { normaliseUrlsForAmplify } from "./amplifyUtils";
 
 type TagAttribute<T extends "a" | "img"> = T extends "a"
   ? { tagName: "a"; attribute: "href" }
@@ -59,7 +60,8 @@ export async function modifyTagAttribute({
         currentRepoName
       );
       if (a.href !== href) {
-        fileContent = fileContent.replace(a.href, href);
+        fileContent = fileContent.replace(`href="${a.href}"`, `href="${href}"`);
+        fileContent = fileContent.replace(`href='${a.href}'`, `href='${href}'`);
       }
     } else if (attribute === "src") {
       /**
@@ -77,6 +79,10 @@ export async function modifyTagAttribute({
           rawPermalink,
           changedPermalinks[rawPermalink]
         );
+        fileContent = fileContent.replace(
+          rawPermalink,
+          changedPermalinks[rawPermalink]
+        );
       }
 
       const { fileContent: src } = await updateFilesUploadsPath(
@@ -85,7 +91,8 @@ export async function modifyTagAttribute({
         currentRepoName
       );
       if (img.src !== src) {
-        fileContent = fileContent.replace(img.src, src);
+        fileContent = fileContent.replace(`src="${img.src}"`, `src="${src}"`);
+        fileContent = fileContent.replace(`src='${img.src}'`, `src='${src}'`);
       }
     }
   }
@@ -141,8 +148,6 @@ export async function updateFilesUploadsPath(
     for (const match of matches) {
       // sanity checks that should have been already guaranteed by regex
       assert(match.endsWith("/"));
-      assert(match.startsWith("/"));
-
       let newFilePath = match.slice(0, -1);
       fileContent = fileContent.replace(match, newFilePath);
     }
@@ -161,7 +166,7 @@ export async function updateFilesUploadsPath(
   const fileMatches = fileContent.match(fileRegex);
   if (fileMatches) {
     for (const match of fileMatches) {
-      const lowerCaseMatch = match.toLowerCase();
+      const lowerCaseMatch = normaliseUrlsForAmplify(match);
       fileContent = fileContent.replace(match, lowerCaseMatch);
       let doesFileExist = false;
       for (const path of setOfAllDocumentsPath) {

@@ -1,5 +1,5 @@
 import YAML, { Scalar, isPair, isScalar, isMap, isSeq, Pair } from "yaml";
-import { getRawPermalink } from "./jsDomUtils";
+import { getRawPermalink, updateFilesUploadsPath } from "./jsDomUtils";
 import { LOGS_FILE, fileExtensionsRegex } from "./constants";
 import os from "os";
 import fs from "fs";
@@ -42,22 +42,21 @@ export async function changeContentInYamlFile(
 
   const originalPermalink = getRawPermalink(filePath);
   if (changedPermalinks[originalPermalink]) {
-    const newPermalink = originalPermalink.toLowerCase();
+    const newPermalink = originalPermalink.toLocaleLowerCase();
     filePath = newPermalink;
   }
 
-  const isFileAsset = fileExtensionsRegex
-    .split("|")
-    .map((ext) => `.${ext}`)
-    .find((ext) => filePath.includes(ext));
-  if (!isFileAsset) {
-    // This could just be a link to the page
-    return fileContent;
-  }
   // YAML does not seem to have a way to update the value of a key in place
   // We just mutate all to lowercase to not care about encoding. Then we report if image is not found
   // rather than programmatically fixing something that we are not 100% sure of.
-  fileContent = fileContent.replace(oriFilePath, filePath.toLowerCase());
+  const { fileContent: modifiedFilePath } = await updateFilesUploadsPath(
+    filePath,
+    setOfAllDocumentsPath,
+    currentRepoName
+  );
+  if (filePath !== modifiedFilePath) {
+    fileContent = fileContent.replace(`: ${filePath}`, `: ${modifiedFilePath}`);
+  }
 
   if (!setOfAllDocumentsPath.has(filePath.toLowerCase() as Lowercase<string>)) {
     // log this in some file for manual checking after the migration

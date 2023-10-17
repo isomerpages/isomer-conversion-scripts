@@ -18,7 +18,7 @@ import { execSync } from "child_process";
 require("dotenv").config();
 
 import { JSDOM } from "jsdom";
-import YAML from "yaml";
+
 import { modifyTagAttribute } from "./jsDomUtils";
 import { getRawPermalink } from "./jsDomUtils";
 import { updateFilesUploadsPath } from "./jsDomUtils";
@@ -151,7 +151,7 @@ async function migrateRepo(
 ) {
   const pwd = process.cwd();
 
-  const repoPath = path.join(`${pwd}/../${repoName}`)
+  const repoPath = path.join(`${pwd}/../${repoName}`);
 
   if (!repairMode) {
     const buildSpec = await readBuildSpec();
@@ -434,7 +434,8 @@ export async function changeFileContent({
     const url = match.slice(match.indexOf("](") + 2, -1);
     let originalPermalink = getRawPermalink(url);
     if (changedPermalinks[originalPermalink]) {
-      const newPermalink = originalPermalink.toLowerCase();
+      const newPermalink = originalPermalink.toLocaleLowerCase();
+
       const newMatch = match.replace(originalPermalink, newPermalink);
       fileContent = fileContent.replace(match, newMatch);
     }
@@ -444,7 +445,7 @@ export async function changeFileContent({
       setOfAllDocumentsPath,
       currentRepoName
     );
-    fileContent = fileContent.replace(url, filepathContent);
+    fileContent = fileContent.replace(`(${url})`, `(${filepathContent})`);
   }
 
   fileContent = await parseYml({
