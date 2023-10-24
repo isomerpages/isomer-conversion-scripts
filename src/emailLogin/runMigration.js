@@ -112,18 +112,17 @@ const getSiteAndContributors = async (site, dbClient) => {
 
 const main = async () => {
   const repos = getReposToMigrate(REPO_LIST_PATH);
-  console.log(repos);
-  // const dbClient = await getDb();
-  // logError(`=================${new Date()}=================`);
-  // for (const repo of repos) {
-  //   try {
-  //     await getSiteAndContributors(repo, dbClient);
-  //     await removeGithubAccess(repo);
-  //   } catch (e) {
-  //     continue;
-  //   }
-  // }
-  // dbClient.end();
+  const dbClient = await getDb();
+  logError(`=================${new Date()}=================`);
+  for (const repo of repos) {
+    try {
+      await getSiteAndContributors(repo, dbClient);
+      await removeGithubAccess(repo);
+    } catch (e) {
+      continue;
+    }
+  }
+  dbClient.end();
 };
 
 main();

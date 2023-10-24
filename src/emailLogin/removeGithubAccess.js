@@ -37,8 +37,17 @@ const removeGithubAccess = async (site) => {
     }
     fs.writeFileSync(`${dirPath}/githubTeam.txt`, contributorNames.join('\n'));
 
-    await octokit.request(`DELETE /orgs/${GITHUB_ORG_NAME}/teams/${site}/repos/${GITHUB_ORG_NAME}/${site}`);
     console.log(`Removing team access for ${site}`);
+    await octokit.request(`DELETE /orgs/${GITHUB_ORG_NAME}/teams/${site}/repos/${GITHUB_ORG_NAME}/${site}`);
+
+    console.log(`Adding core team access for ${site} if it doesn't already exist`);
+    await octokit.rest.teams.addOrUpdateRepoPermissionsInOrg({
+      org: GITHUB_ORG_NAME,
+      team_slug: 'core',
+      owner: GITHUB_ORG_NAME,
+      repo: site,
+      permission: 'admin',
+    });
   } catch (err) {
     logError(`The following error was encountered while migrating site ${site}: ${err}`);
   }
@@ -47,3 +56,5 @@ const removeGithubAccess = async (site) => {
 module.exports = {
   removeGithubAccess,
 };
+
+removeGithubAccess('a-test-v4');

@@ -15,11 +15,13 @@ Next, you will require the correct environment variables and credentials.
 - Search for the corresponding credentials `isomercms-<staging | production>-bastion.pem`
 - Put these credentials into the .ssh folder also.
 
-Also, ensure that the repo name and the team name of the github repository are the same before starting, and that the isomer core team has admin access to the repo.
+Also, ensure that the repo name and the team name of the github repository are the same before starting.
 
 ### Running the migration
 
-1. Source your environment variables using `source .env`. The variables you will require are:
+1. Navigate to the `/src/emailLogin` folder.
+
+2. Source your environment variables using `source .env`. The variables you will require are:
 
 - `PERSONAL_ACCESS_TOKEN` (Github personal access token)
 - `GITHUB_ORG_NAME` (isomerpages)
@@ -27,11 +29,11 @@ Also, ensure that the repo name and the team name of the github repository are t
 
 Ideally, this should be done by the designated team account, not with your personal account.
 
-2. Next, run the following command: `npm run jump:<staging | prod>`. This sets up the port-forwarding service.
+3. Next, run the following command: `npm run jump:<staging | prod>`. This sets up the port-forwarding service.
 
-3. Populate the `repos.csv` file with the list of repos
+4. Populate the `repos.csv` file with the list of repos
 
-4. In a separate terminal, run `runMigration.js` with the following command:
+5. In a separate terminal, run `runMigration.js` with the following command:
 
 ```
 node runMigration.js
@@ -39,11 +41,11 @@ node runMigration.js
 
 This adds the new site member entries and also outputs texts file in `/<repo name>/[contributors | repos | insertQueries].txt` with the retrieved information, and documents the insert queries run. Github write access for the site members will also be removed.
 
-5. Fill in the appropriate form (prod: https://form.gov.sg/6513ae794fec5f0012b7f8ad) to clone the repo on our EFS.
+6. Fill in the appropriate form (prod: https://form.gov.sg/6513ae794fec5f0012b7f8ad) to clone the repo on our EFS.
 
 ## Standalone github
 
-1. Follow steps 1-2 as above.
+1. Follow steps 1-3 as above.
 
 2. Populate the `reponames.csv` file with the list of repos, separated by new lines
 
