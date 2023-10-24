@@ -15,7 +15,7 @@ Next, you will require the correct environment variables and credentials.
 - Search for the corresponding credentials `isomercms-<staging | production>-bastion.pem`
 - Put these credentials into the .ssh folder also.
 
-Also, ensure that the repo name and the team name of the github repository are the same before starting.
+Also, ensure that the repo name and the team name of the github repository are the same before starting, and that the isomer core team has admin access to the repo.
 
 ### Running the migration
 
