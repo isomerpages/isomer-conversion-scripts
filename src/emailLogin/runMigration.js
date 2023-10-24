@@ -9,19 +9,17 @@ const { GITHUB_ACCESS_TOKEN, GITHUB_ORG_NAME: ISOMER_GITHUB_ORG_NAME } = process
 
 const ISOMER_USERS = ['isomeradmin', 'rc-davis', 'lamkeewei', 'pallani', 'LoneRifle', 'prestonlimlianjie', 'alexanderleegs', 'lisatjide', 'kwajiehao', 'gweiying', 'seaerchin', 'isomer-demo', 'NatMaeTan', ' jacksonOGP', 'chienlinggg', 'kathleenkhy', 'joshuajunmingt', 'audreytcy', 'yanjunquek', 'chloe-opengovsg', 'shazlithebestie', 'lennardl', 'oliverli', 'taufiq'];
 
-const REPO_LIST_PATH = './repos.txt';
+const REPO_LIST_PATH = './repos.csv';
 
 /**
  * Reading CSV file
- * @param filePath if undefined, list-of-repos.csv
- *                 in the current directory will be used
- * @returns list of repos and their human friendly names
+ * @returns list of repos by their github name
  */
 function getReposToMigrate(
   filePath,
 ) {
   const data = fs.readFileSync(filePath, 'utf8');
-  return data.split(',');
+  return data.split('\n').slice(1);
 }
 
 const writeMigrationInfoToRecords = async (site, contributorRecord, repoRecord, insertRecord) => {
@@ -114,17 +112,18 @@ const getSiteAndContributors = async (site, dbClient) => {
 
 const main = async () => {
   const repos = getReposToMigrate(REPO_LIST_PATH);
-  const dbClient = await getDb();
-  logError(`=================${new Date()}=================`);
-  for (const repo of repos) {
-    try {
-      await getSiteAndContributors(repo, dbClient);
-      await removeGithubAccess(repo);
-    } catch (e) {
-      continue;
-    }
-  }
-  dbClient.end();
+  console.log(repos);
+  // const dbClient = await getDb();
+  // logError(`=================${new Date()}=================`);
+  // for (const repo of repos) {
+  //   try {
+  //     await getSiteAndContributors(repo, dbClient);
+  //     await removeGithubAccess(repo);
+  //   } catch (e) {
+  //     continue;
+  //   }
+  // }
+  // dbClient.end();
 };
 
 main();

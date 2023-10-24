@@ -29,7 +29,7 @@ Ideally, this should be done by the designated team account, not with your perso
 
 2. Next, run the following command: `npm run jump:<staging | prod>`. This sets up the port-forwarding service.
 
-3. Populate the `repos.txt` file with the list of repos, separated by `,`
+3. Populate the `repos.csv` file with the list of repos
 
 4. In a separate terminal, run `runMigration.js` with the following command:
 
