@@ -26,9 +26,11 @@ node migrationScript.js <repo name>
 Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9baff55ef4aebbe9f472fadf5a096?pvs=4
 
 ### How to use
-1. Create codespaces durectly from github by going to `https://github.com/isomerpages/isomer-conversion-scripts` -> "code" -> codespaces -> create codespaces on staging.
+
+1. Create codespaces directly from github by going to `https://github.com/isomerpages/isomer-conversion-scripts` -> "code" -> codespaces -> create codespaces on staging.
 
 2. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth. Quick way to check this is by running `gh auth status`, you should see something like this
+
 ```
 ✓ Logged in to github.com as kishore03109 (GITHUB_TOKEN)
   ✓ Git operations for github.com configured to use https protocol.
@@ -48,7 +50,7 @@ Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9ba
 8. Copy over the appended commands in the file and run them on production DB
 9. If a redirects\_<repo-name>.json is created, copy and paste the file over to the corresponding Amplify app under the `Rewrites and redirects` tab name.
 10. Check to see if there are any errors being reported in the `logs.txt` file.
-11. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly), check for any unexpected uncommitted `.md` file changes in the repo directory (/isomer-migrations/<repo-name>).
+11. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly), check for any unexpected uncommitted `.md` file changes in the repo directory (/../<repo-name>).
 
 ### Notes
 
@@ -74,6 +76,7 @@ The sole reason for this should be used for debugging files, and when there exis
 
 To run this, run
 `npm run amplify:migrate -- -user-id=<user-id> -repair-mode=true` in the command line.
+The file would exist at `../<repo-name>` for debugging purpose.
 
 ### Email login migration
 
