@@ -45,6 +45,8 @@ This adds the new site member entries and also outputs texts file in `/<repo nam
 
 ## Standalone script to retrieve github user mapping (no change to db/github teams)
 
+If you only want to retrieve the mapping of github login repos to email users, without the associated db/github teams changes, a standalone version of this script can also be run.
+
 1. Follow steps 1-3 as above.
 
 2. Populate the `reponames.csv` file with the list of repos, separated by new lines
