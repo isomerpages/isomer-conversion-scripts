@@ -19,7 +19,9 @@ Also, ensure that the repo name and the team name of the github repository are t
 
 ### Running the migration
 
-1. Source your environment variables using `source .env`. The variables you will require are:
+1. Navigate to the `/src/emailLogin` folder.
+
+2. Source your environment variables using `source .env`. The variables you will require are:
 
 - `PERSONAL_ACCESS_TOKEN` (Github personal access token)
 - `GITHUB_ORG_NAME` (isomerpages)
@@ -27,18 +29,28 @@ Also, ensure that the repo name and the team name of the github repository are t
 
 Ideally, this should be done by the designated team account, not with your personal account.
 
-2. Next, run the following command: `npm run jump:<staging | prod>`. This sets up the port-forwarding service.
+3. Next, run the following command: `npm run jump:<staging | prod>`. This sets up the port-forwarding service.
 
-3. In a separate terminal, run `runMigration.js` with the following command:
+4. Populate the `repos.csv` file with the list of repos
 
-```
-node runMigration.js <repo name>
-```
-
-This adds the new site member entries and also outputs texts file in `/<repo name>/[contributors | repos | insertQueries].txt` with the retrieved information, and insert query run.
-
-4. Finally, to prevent users from accessing github to edit their sites directly, remove write access of the Github team with the following command:
+5. In a separate terminal, run `runMigration.js` with the following command:
 
 ```
-node removeGithubAccess.js <repo name>
+node runMigration.js
+```
+
+This adds the new site member entries and also outputs texts file in `/<repo name>/[contributors | repos | insertQueries].txt` with the retrieved information, and documents the insert queries run. Github write access for the site members will also be removed.
+
+6. Fill in the appropriate form (prod: https://form.gov.sg/6513ae794fec5f0012b7f8ad) to clone the repo on our EFS.
+
+## Standalone github
+
+1. Follow steps 1-3 as above.
+
+2. Populate the `reponames.csv` file with the list of repos, separated by new lines
+
+3. In a separate terminal, run `getContributors.js` with the following command:
+
+```
+node getContributors.js
 ```
