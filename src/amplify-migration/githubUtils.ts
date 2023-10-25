@@ -86,7 +86,7 @@ export async function isRepoMigrated(repoName: string): Promise<boolean> {
 
 export async function createStagingLiteBranch(repoName: string): Promise<void> {
   const remoteRepoUrl = `https://github.com/${ORGANIZATION_NAME}/${repoName}.git`;
-  const stgLiteDir = path.join(`${process.cwd()}/../${repoName}-staging-lite`);
+  const stgLiteDir = `${process.cwd()}/../${repoName}-staging-lite`;
   // Make sure the local path is empty, just in case dir was used on a previous attempt.
   fs.rmSync(`${stgLiteDir}`, { recursive: true, force: true });
   // create a empty folder stgLiteDir
