@@ -4,7 +4,8 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { errorMessage } from "./errorMessage";
-import { LOGS_FILE } from "./constants";
+import { LOGS_FILE, fileExtensionsRegex } from "./constants";
+import { normaliseUrlsForAmplify } from "./amplifyUtils";
 
 type TagAttribute<T extends "a" | "img"> = T extends "a"
   ? { tagName: "a"; attribute: "href" }
@@ -59,7 +60,8 @@ export async function modifyTagAttribute({
         currentRepoName
       );
       if (a.href !== href) {
-        fileContent = fileContent.replace(a.href, href);
+        fileContent = fileContent.replace(`href="${a.href}"`, `href="${href}"`);
+        fileContent = fileContent.replace(`href='${a.href}'`, `href='${href}'`);
       }
     } else if (attribute === "src") {
       /**
@@ -77,6 +79,10 @@ export async function modifyTagAttribute({
           rawPermalink,
           changedPermalinks[rawPermalink]
         );
+        fileContent = fileContent.replace(
+          rawPermalink,
+          changedPermalinks[rawPermalink]
+        );
       }
 
       const { fileContent: src } = await updateFilesUploadsPath(
@@ -85,7 +91,8 @@ export async function modifyTagAttribute({
         currentRepoName
       );
       if (img.src !== src) {
-        fileContent = fileContent.replace(img.src, src);
+        fileContent = fileContent.replace(`src="${img.src}"`, `src="${src}"`);
+        fileContent = fileContent.replace(`src='${img.src}'`, `src='${src}'`);
       }
     }
   }
@@ -132,15 +139,15 @@ export async function updateFilesUploadsPath(
    * NOTE: We don't want to change URLs of external links, eg https://www.google.com
    * We also want to capture relative links, eg ../files/abc.pdf
    */
-  const fileRegexWithTrailingSlash =
-    /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)\//gi;
+  const fileRegexWithTrailingSlash = new RegExp(
+    `(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(${fileExtensionsRegex})\/`,
+    "gi"
+  );
   const matches = fileContent.match(fileRegexWithTrailingSlash);
   if (matches) {
     for (const match of matches) {
       // sanity checks that should have been already guaranteed by regex
       assert(match.endsWith("/"));
-      assert(match.startsWith("/"));
-
       let newFilePath = match.slice(0, -1);
       fileContent = fileContent.replace(match, newFilePath);
     }
@@ -151,12 +158,15 @@ export async function updateFilesUploadsPath(
    * We also want to capture relative links, eg ../files/abc.pdf
    * WE modify them to be small casing, then report it
    */
-  const fileRegex =
-    /^(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(pdf|png|jpg|gif|tif|bmp|ico|svg)/gi;
+  const fileRegex = new RegExp(
+    `(?!(www\.|https?:\/\/))(\.\.\/)*(\/)*(files|images)\/.*.(${fileExtensionsRegex})`,
+    "gi"
+  );
+
   const fileMatches = fileContent.match(fileRegex);
   if (fileMatches) {
     for (const match of fileMatches) {
-      const lowerCaseMatch = match.toLowerCase();
+      const lowerCaseMatch = normaliseUrlsForAmplify(match);
       fileContent = fileContent.replace(match, lowerCaseMatch);
       let doesFileExist = false;
       for (const path of setOfAllDocumentsPath) {

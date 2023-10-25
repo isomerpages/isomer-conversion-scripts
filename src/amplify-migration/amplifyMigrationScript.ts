@@ -18,12 +18,17 @@ import { execSync } from "child_process";
 require("dotenv").config();
 
 import { JSDOM } from "jsdom";
-import YAML from "yaml";
+
 import { modifyTagAttribute } from "./jsDomUtils";
 import { getRawPermalink } from "./jsDomUtils";
 import { updateFilesUploadsPath } from "./jsDomUtils";
 import { isRepoMigrated, pushChangesToRemote } from "./githubUtils";
-import { PERMALINK_REGEX, LOGS_FILE, SQL_COMMANDS_FILE } from "./constants";
+import {
+  PERMALINK_REGEX,
+  LOGS_FILE,
+  SQL_COMMANDS_FILE,
+  fileExtensionsRegex,
+} from "./constants";
 import { changePermalinksInMdFile } from "./mdFileUtils";
 import { checkoutBranch } from "./githubUtils";
 import { isRepoEmpty } from "./githubUtils";
@@ -74,12 +79,17 @@ async function main() {
   const userIdString = args
     .find((arg) => arg.startsWith("-user-id="))
     ?.split("=")[1];
+
   if (!userIdString) {
     console.error(
       "Please provide a user id with the -user-id= flag. Eg `npm run amplify-migrate -- -user-id=1`"
     );
     return;
   }
+  const repairMode =
+    args.find((arg) => arg.startsWith("-repair-mode="))?.split("=")[1] ===
+    "true";
+
   const userId = parseInt(userIdString);
 
   const filePath = args
@@ -107,7 +117,7 @@ async function main() {
         return;
       }
 
-      if (await isRepoMigrated(repoName)) {
+      if (!repairMode && (await isRepoMigrated(repoName))) {
         console.info(`Skipping ${repoName} as it has already been migrated`);
         // write repos that have no code to a file
         fs.appendFileSync(
@@ -116,7 +126,7 @@ async function main() {
         );
         return;
       }
-      await migrateRepo(repoName, name, userId);
+      await migrateRepo(repoName, name, userId, repairMode);
     } catch (e) {
       const error: errorMessage = {
         message: `${e}`,
@@ -133,24 +143,42 @@ async function main() {
   });
 }
 
-async function migrateRepo(repoName: string, name: string, userId: number) {
-  const repoPath = `${os.homedir()}/isomer-migrations/${repoName}`;
-  const buildSpec = await readBuildSpec();
-  const appId = await createAmplifyApp(repoName, buildSpec);
-  const amplifyAppInfo: AmplifyAppInfo = {
-    appId,
-    repoName,
-    name,
-    repoPath,
-  };
-  await createAmplifyBranches(amplifyAppInfo);
-  await startReleaseJob(amplifyAppInfo);
-  await checkoutBranch(repoPath, repoName);
-  await modifyRepo({ repoName, appId, repoPath, name });
-  await buildLocally(repoPath);
-  await pushChangesToRemote(amplifyAppInfo);
-  await generateRedirectsRules(amplifyAppInfo);
-  await generateSqlCommands(amplifyAppInfo, userId);
+async function migrateRepo(
+  repoName: string,
+  name: string,
+  userId: number,
+  repairMode: boolean
+) {
+  const pwd = process.cwd();
+
+  const repoPath = path.join(`${pwd}/../${repoName}`);
+
+  if (!repairMode) {
+    const buildSpec = await readBuildSpec();
+    const appId = await createAmplifyApp(repoName, buildSpec);
+    const amplifyAppInfo: AmplifyAppInfo = {
+      appId,
+      repoName,
+      name,
+      repoPath,
+    };
+    await createAmplifyBranches(amplifyAppInfo);
+    await startReleaseJob(amplifyAppInfo);
+
+    await checkoutBranch(repoPath, repoName);
+    await modifyRepo({ repoName, appId, repoPath, name });
+    await buildLocally(repoPath);
+
+    await pushChangesToRemote(amplifyAppInfo);
+    await generateRedirectsRules(amplifyAppInfo);
+    await generateSqlCommands(amplifyAppInfo, userId);
+  } else {
+    // Only used for debugging purposes, changes will not be pushed to remote
+    const appId = "test";
+    await checkoutBranch(repoPath, repoName);
+    await modifyRepo({ repoName, appId, repoPath, name, repairMode });
+    await buildLocally(repoPath);
+  }
 }
 
 async function generateRedirectsRules({ repoName, repoPath }: AmplifyAppInfo) {
@@ -205,9 +233,12 @@ export async function modifyRepo({
   repoName,
   appId,
   repoPath,
-}: AmplifyAppInfo) {
+  repairMode,
+}: AmplifyAppInfo & { repairMode?: boolean }) {
   await modifyPermalinks({ repoPath, repoName });
-  await updateConfigYml(appId, repoPath);
+  if (!repairMode) {
+    await updateConfigYml(appId, repoPath);
+  }
 }
 
 async function modifyPermalinks({
@@ -395,7 +426,7 @@ export async function changeFileContent({
   // eg. [![inline text](/images/someimage.jpg)](/images/somedoc.pdf)
   // TODO: take care of edge case: [![blah](/images/blah.jpg){:style="width: 300px"}](https://blah.com)
   const outerLink = `(!?\\[([^\\]]*)\\])`;
-  const innerLink = `\\(([^\\s]*)\\s*(".*")?\\)`;
+  const innerLink = `\\(([^\\s]*)\\s*(".${fileExtensionsRegex}")?\\)`;
   const markdownRegex = new RegExp(`${outerLink}${innerLink}`, "g");
   const markdownRelativeUrlMatches = fileContent.match(markdownRegex) || [];
 
@@ -403,7 +434,8 @@ export async function changeFileContent({
     const url = match.slice(match.indexOf("](") + 2, -1);
     let originalPermalink = getRawPermalink(url);
     if (changedPermalinks[originalPermalink]) {
-      const newPermalink = originalPermalink.toLowerCase();
+      const newPermalink = originalPermalink.toLocaleLowerCase();
+
       const newMatch = match.replace(originalPermalink, newPermalink);
       fileContent = fileContent.replace(match, newMatch);
     }
@@ -413,7 +445,7 @@ export async function changeFileContent({
       setOfAllDocumentsPath,
       currentRepoName
     );
-    fileContent = fileContent.replace(url, filepathContent);
+    fileContent = fileContent.replace(`(${url})`, `(${filepathContent})`);
   }
 
   fileContent = await parseYml({

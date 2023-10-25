@@ -27,21 +27,30 @@ Refer to here: https://www.notion.so/opengov/Netlify-to-Amplify-Migration-01b9ba
 
 ### How to use
 
-0. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth
-1. Populate environment variables for the following
+1. Create codespaces directly from github by going to `https://github.com/isomerpages/isomer-conversion-scripts` -> "code" -> codespaces -> create codespaces on staging.
+
+2. Ensure you are logged into GitHub from CLI - https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git as the script uses HTTPS auth. Quick way to check this is by running `gh auth status`, you should see something like this
+
+```
+✓ Logged in to github.com as kishore03109 (GITHUB_TOKEN)
+  ✓ Git operations for github.com configured to use https protocol.
+  ✓ Token: g************************************
+```
+
+3. Populate environment variables for the following
 
 - `GITHUB_ACCESS_TOKEN` (Github personal access token)
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-1. Navigate to src/amplify-migration/list-of-repos.csv
-2. Populate the csv file with the desired values
-3. Run `npm run amplify:migrate -- -user-id=<user-id>` in the command line. If you wish to use another CSV file, run `npm run amplify:migrate -- -user-id=457 -repo-path=<path-to-csv>`
-4. Navigate to `src/amplify-migration/sqlcommands.txt`
-5. Copy over the appended commands in the file and run them on production DB
-6. If a redirects\_<repo-name>.json is created, copy and paste the file over to the corresponding Amplify app under the `Rewrites and redirects` tab name.
-7. Check to see if there are any errors being reported in the `logs.txt` file.
-8. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly), check for any unexpected uncommitted `.md` file changes in the repo directory (/isomer-migrations/<repo-name>).
+4. Navigate to src/amplify-migration/list-of-repos.csv
+5. Populate the csv file with the desired values
+6. Run `npm run amplify:migrate -- -user-id=<user-id>` in the command line. If you wish to use another CSV file, run `npm run amplify:migrate -- -user-id=457 -repo-path=<path-to-csv>`
+7. Navigate to `src/amplify-migration/sqlcommands.txt`
+8. Copy over the appended commands in the file and run them on production DB
+9. If a redirects\_<repo-name>.json is created, copy and paste the file over to the corresponding Amplify app under the `Rewrites and redirects` tab name.
+10. Check to see if there are any errors being reported in the `logs.txt` file.
+11. As a sanity check, visit the site's staging site to see if everything is working as intended (look our for resources + images are loading properly), check for any unexpected uncommitted `.md` file changes in the repo directory (/../<repo-name>).
 
 ### Notes
 
@@ -53,6 +62,21 @@ Error occurred for <repoName>: Error: error: The following untracked working tre
 ```
 
 These files will need to be manually modified before the script can be run again. Ensure that all references to this file are also updated with the simplified name.
+
+#### Repair mode
+
+As eng, there were multiple times where we faced issues with the previous scripts, and things went wrong somewhere. To enable eng to improve velocity, this scrip also has a repair mode. When this is set to true, the repo will NOT
+
+1. create an amplify app
+2. not update any staging and master branches of the amplify app
+3. will make commits to the repo locally and merge them to the staging branch, but there will not be any pushes to remote
+4. not update the SQL commands
+
+The sole reason for this should be used for debugging files, and when there exists a large number of files to debug.
+
+To run this, run
+`npm run amplify:migrate -- -user-id=<user-id> -repair-mode=true` in the command line.
+The file would exist at `../<repo-name>` for debugging purpose.
 
 ### Email login migration
 
