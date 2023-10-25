@@ -43,7 +43,7 @@ This adds the new site member entries and also outputs texts file in `/<repo nam
 
 6. Fill in the appropriate form (prod: https://form.gov.sg/6513ae794fec5f0012b7f8ad) to clone the repo on our EFS.
 
-## Standalone github
+## Standalone script to retrieve github user mapping (no change to db/github teams)
 
 1. Follow steps 1-3 as above.
 
