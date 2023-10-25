@@ -82,7 +82,8 @@ const getSiteAndContributors = async (site, dbClient) => {
         // User is from migration army
         return;
       }
-      if (user.email.endsWith('@gmail.com') || user.email.endsWith('@hotmail.com') || user.email.endsWith('@ymail.com')) return;
+      const isMigrationArmyUser = user.email.endsWith('@gmail.com') || user.email.endsWith('@hotmail.com') || user.email.endsWith('@ymail.com');
+      if (isMigrationArmyUser) return;
       emails.push(user.email);
       const userType = whitelistedDomains.filter((domain) => user.email.endsWith(domain)).length > 0 ? 'ADMIN' : 'CONTRIBUTOR';
       siteMemberValues.push(`(${userId}, ${repoId}, '${userType}')`);
