@@ -3,6 +3,7 @@ import fs from "fs";
 import simpleGit from "simple-git";
 import { BRANCH_NAME, ORGANIZATION_NAME } from "./constants";
 import { Octokit } from "@octokit/core";
+import path from "path";
 
 export async function pushChangesToRemote({ repoPath }: AmplifyAppInfo) {
   await simpleGit(repoPath).checkout("staging");
@@ -81,4 +82,47 @@ export async function isRepoMigrated(repoName: string): Promise<boolean> {
   );
   const content = Buffer.from(result.data.content, "base64").toString("ascii");
   return content.includes(".amplifyapp.com");
+}
+
+export async function createStagingLiteBranch(repoName: string): Promise<void> {
+  const remoteRepoUrl = `https://github.com/${ORGANIZATION_NAME}/${repoName}.git`;
+  const stgLiteDir = `${process.cwd()}/../${repoName}-staging-lite`;
+  // Make sure the local path is empty, just in case dir was used on a previous attempt.
+  fs.rmSync(`${stgLiteDir}`, { recursive: true, force: true });
+  // create a empty folder stgLiteDir
+  fs.mkdirSync(stgLiteDir);
+
+  // Create staging lite branch in other repo path
+  await simpleGit(stgLiteDir)
+    .clone(remoteRepoUrl, stgLiteDir)
+    .checkout("staging")
+    .rm(["-r", "images"])
+    .rm(["-r", "files"]);
+
+  // Clear git
+  fs.rmSync(`${stgLiteDir}/.git`, { recursive: true, force: true });
+
+  // Prepare git repo
+
+  await simpleGit(stgLiteDir)
+    .init()
+    .checkoutLocalBranch("staging-lite")
+    .add(".")
+    .commit("Initial commit")
+    .addRemote("origin", remoteRepoUrl)
+    .push(["origin", "staging-lite", "-f"]);
+}
+
+export async function isRepoPrivate(repoName: string): Promise<boolean> {
+  const octokit = new Octokit({
+    auth: process.env.GITHUB_ACCESS_TOKEN,
+  });
+  const result = await octokit.request(
+    `GET /repos/${ORGANIZATION_NAME}/${repoName}`,
+    {
+      owner: ORGANIZATION_NAME,
+      repo: repoName,
+    }
+  );
+  return result.data.private;
 }

@@ -2,6 +2,7 @@ import {
   AmplifyAppInfo,
   createAmplifyApp,
   createAmplifyBranches,
+  protectBranch,
   readBuildSpec,
   startReleaseJob,
 } from "./amplifyUtils";
@@ -22,7 +23,12 @@ import { JSDOM } from "jsdom";
 import { modifyTagAttribute } from "./jsDomUtils";
 import { getRawPermalink } from "./jsDomUtils";
 import { updateFilesUploadsPath } from "./jsDomUtils";
-import { isRepoMigrated, pushChangesToRemote } from "./githubUtils";
+import {
+  createStagingLiteBranch,
+  isRepoMigrated,
+  isRepoPrivate,
+  pushChangesToRemote,
+} from "./githubUtils";
 import {
   PERMALINK_REGEX,
   LOGS_FILE,
@@ -171,7 +177,25 @@ async function migrateRepo(
 
     await pushChangesToRemote(amplifyAppInfo);
     await generateRedirectsRules(amplifyAppInfo);
-    await generateSqlCommands(amplifyAppInfo, userId);
+
+    // Integration with reduction in build times
+    await createStagingLiteBranch(repoName);
+    const isRepoPrivatised = await isRepoPrivate(repoName);
+    const stagingLiteAppId = await createAmplifyApp(repoName, buildSpec, true);
+    const stagingLiteAppInfo: AmplifyAppInfo = {
+      appId: stagingLiteAppId,
+      repoName,
+      name,
+      repoPath,
+      isStagingLite: true,
+    };
+    await createAmplifyBranches(stagingLiteAppInfo);
+    if (isRepoPrivatised) {
+      await protectBranch(stagingLiteAppId);
+    }
+    await startReleaseJob(stagingLiteAppInfo);
+
+    await generateSqlCommands(amplifyAppInfo, stagingLiteAppInfo, userId);
   } else {
     // Only used for debugging purposes, changes will not be pushed to remote
     const appId = "test";
@@ -563,14 +587,15 @@ async function updateConfigYml(appId: string, repoPath: string) {
 
 async function generateSqlCommands(
   { name, repoName, appId }: AmplifyAppInfo,
+  { appId: stagingLiteAppId }: AmplifyAppInfo,
   userId: number
 ) {
   const sqlCommands = `INSERT INTO sites (name, site_status, job_status, creator_id)
 VALUES ('${name}', 'INITIALIZED', 'READY', '${userId}');
 INSERT INTO repos (name, url, created_at, updated_at, site_id)
 SELECT '${repoName}', 'https://github.com/isomerpages/${repoName}', NOW(), NOW(), id FROM sites WHERE name = '${name}';
-INSERT INTO deployments (production_url, staging_url, hosting_id, created_at, updated_at, site_id) 
-SELECT 'https://master.${appId}.amplifyapp.com','https://staging.${appId}.amplifyapp.com', '${appId}', NOW(), NOW(),id 
+INSERT INTO deployments (production_url, staging_url, hosting_id, staging_lite_hosting_id,  created_at, updated_at, site_id) 
+SELECT 'https://master.${appId}.amplifyapp.com','https://staging-lite.${stagingLiteAppId}.amplifyapp.com', '${appId}', '${stagingLiteAppId}', NOW(), NOW(),id 
 FROM sites WHERE name = '${name}'; \n`;
   const sqlFile = path.join(__dirname, SQL_COMMANDS_FILE);
   // append sql commands to file

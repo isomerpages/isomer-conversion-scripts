@@ -1,8 +1,10 @@
 import {
   AmplifyClient,
   CreateAppCommand,
+  CreateAppCommandInput,
   CreateBranchCommand,
   StartJobCommand,
+  UpdateAppCommand,
 } from "@aws-sdk/client-amplify";
 import path from "path";
 import fs from "fs";
@@ -28,6 +30,7 @@ export interface AmplifyAppInfo {
   repoName: string;
   name: string;
   repoPath: string;
+  isStagingLite?: boolean;
 }
 
 export async function readBuildSpec() {
@@ -37,7 +40,7 @@ export async function readBuildSpec() {
 
 function generateCreateBranchInput(
   appId: string,
-  branchName: "master" | "staging"
+  branchName: "master" | "staging" | "staging-lite"
 ) {
   return new CreateBranchCommand({
     appId,
@@ -51,17 +54,34 @@ function generateCreateBranchInput(
   });
 }
 
-export async function createAmplifyBranches({ appId }: AmplifyAppInfo) {
+export async function createAmplifyBranches({
+  appId,
+  isStagingLite,
+}: AmplifyAppInfo) {
+  if (isStagingLite) {
+    await awsClient.send(generateCreateBranchInput(appId, "staging-lite"));
+    return;
+  }
+
   await awsClient.send(generateCreateBranchInput(appId, "staging"));
   await awsClient.send(generateCreateBranchInput(appId, "master"));
 }
 
-export async function startReleaseJob({ appId }: AmplifyAppInfo) {
+export async function startReleaseJob({
+  appId,
+  isStagingLite,
+}: AmplifyAppInfo) {
   const params = {
     appId,
-    branchName: "master",
+    branchName: "staging-lite",
     jobType: "RELEASE",
   };
+
+  if (isStagingLite) {
+    return awsClient.send(new StartJobCommand(params));
+  }
+
+  params.branchName = "master";
   await awsClient.send(new StartJobCommand(params));
 
   params.branchName = "staging";
@@ -70,23 +90,42 @@ export async function startReleaseJob({ appId }: AmplifyAppInfo) {
 
 export async function createAmplifyApp(
   repo_name: string,
-  build_spec: string
+  build_spec: string,
+  isStagingLite: boolean = false
 ): Promise<string> {
-  const params = {
+  let redirectRules = [
+    {
+      source: "/<*>",
+      target: "/404.html",
+      status: "404",
+    },
+  ];
+
+  if (isStagingLite) {
+    redirectRules = [
+      {
+        source: "/files/<*>",
+        target: `https://raw.githubusercontent.com/isomerpages/${repo_name}/staging/files/<*>`,
+        status: "200",
+      },
+      {
+        source: "/images/<*>",
+        target: `https://raw.githubusercontent.com/isomerpages/${repo_name}/staging/images/<*>`,
+        status: "200",
+      },
+      ...redirectRules,
+    ];
+  }
+
+  let params: CreateAppCommandInput = {
     accessToken: process.env.GITHUB_ACCESS_TOKEN,
-    name: repo_name,
+    name: isStagingLite ? `${repo_name}-staging-lite` : repo_name,
     repository: `https://github.com/isomerpages/${repo_name}`,
     buildSpec: build_spec,
     environmentVariables: {
       JEKYLL_ENV: "development",
     },
-    customRules: [
-      {
-        source: "/<*>",
-        target: "/404.html",
-        status: "404",
-      },
-    ],
+    customRules: redirectRules,
   };
 
   const command = new CreateAppCommand(params);
@@ -110,4 +149,22 @@ export function normaliseUrlsForAmplify(filePath: string) {
     return `/${filePath.toLocaleLowerCase()}`;
   }
   return filePath.toLocaleLowerCase();
+}
+
+export async function createStagingLiteBranch(
+  repoName: string,
+  buildSpec: string
+) {
+  const appId = await createAmplifyApp(repoName, buildSpec, true);
+}
+
+export async function protectBranch(repoPath: string) {
+  const command = new UpdateAppCommand({
+    enableBasicAuth: true,
+    appId: repoPath,
+    basicAuthCredentials: Buffer.from(
+      `user:${process.env.AMPLIFY_DEFAULT_PASSWORD}`
+    ).toString("base64"),
+  });
+  await awsClient.send(command);
 }
