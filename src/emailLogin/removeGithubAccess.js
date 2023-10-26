@@ -11,6 +11,30 @@ const octokit = new Octokit({
   auth: GITHUB_ACCESS_TOKEN,
 });
 
+const closePrs = async (repo) => {
+  const pullsResp = await octokit.rest.pulls.list({
+    owner: GITHUB_ORG_NAME,
+    repo,
+    state: 'open',
+  });
+  const openPrs = pullsResp.data;
+  for (const pullRequest of openPrs) {
+    const prNumber = pullRequest.number;
+    try {
+      await octokit.rest.pulls.update({
+        owner: GITHUB_ORG_NAME,
+        repo,
+        pull_number: prNumber,
+        state: 'closed',
+      });
+      console.log(`Close PR #${prNumber} for ${repo}`);
+    } catch (error) {
+      // Non-blocking error - manually investigate
+      logError(`Error closing pull request #${pullRequest.number} of ${repo}: ${error.message}`);
+    }
+  }
+};
+
 const removeGithubAccess = async (site) => {
   try {
     const { data: respData } = await axios.get(
@@ -48,6 +72,7 @@ const removeGithubAccess = async (site) => {
       repo: site,
       permission: 'admin',
     });
+    await closePrs(site);
   } catch (err) {
     logError(`The following error was encountered while migrating site ${site}: ${err}`);
   }
@@ -56,5 +81,3 @@ const removeGithubAccess = async (site) => {
 module.exports = {
   removeGithubAccess,
 };
-
-removeGithubAccess('a-test-v4');
