@@ -10,6 +10,7 @@ const { GITHUB_ACCESS_TOKEN, GITHUB_ORG_NAME: ISOMER_GITHUB_ORG_NAME } = process
 const ISOMER_USERS = ['isomeradmin', 'rc-davis', 'lamkeewei', 'pallani', 'LoneRifle', 'prestonlimlianjie', 'alexanderleegs', 'lisatjide', 'kwajiehao', 'gweiying', 'seaerchin', 'isomer-demo', 'NatMaeTan', ' jacksonOGP', 'chienlinggg', 'kathleenkhy', 'joshuajunmingt', 'audreytcy', 'yanjunquek', 'chloe-opengovsg', 'shazlithebestie', 'lennardl', 'oliverli', 'taufiq', 'kishore03109', 'harishv7', 'QiluXie'];
 
 const REPO_LIST_PATH = './repos.csv';
+const EMAIL_CSV_PATH = './emails.csv';
 
 /**
  * Reading CSV file
@@ -22,7 +23,7 @@ function getReposToMigrate(
   return data.split('\n').slice(1);
 }
 
-const writeMigrationInfoToRecords = async (site, contributorRecord, repoRecord, insertRecord) => {
+const writeMigrationInfoToRecords = async (site, contributorRecord, repoRecord, insertRecord, emails) => {
   try {
     // write repo information and queries run to file
     if (!fs.existsSync('./emailMigrationData')) {
@@ -35,6 +36,9 @@ const writeMigrationInfoToRecords = async (site, contributorRecord, repoRecord, 
     fs.writeFileSync(`${dirPath}/contributors.txt`, contributorRecord);
     fs.writeFileSync(`${dirPath}/repos.txt`, repoRecord);
     fs.writeFileSync(`${dirPath}/insertQueries.txt`, insertRecord);
+    emails.forEach((email) => {
+      fs.appendFileSync(EMAIL_CSV_PATH, `${site},${email}\n`);
+    });
   } catch (err) {
     logError(`The following error was encountered while writing records for site ${site}: ${err}`);
   }
@@ -83,6 +87,7 @@ const getSiteAndContributors = async (site, dbClient) => {
     const additionalIsomerEmails = (await dbClient.query(isomerWhitelistQuery)).rows.map((whitelistData) => whitelistData.email);
 
     const siteMemberValues = [];
+    const siteMemberEmails = [];
     userData.forEach((user) => {
       const userId = user.id;
       if (!user.email) {
@@ -93,6 +98,7 @@ const getSiteAndContributors = async (site, dbClient) => {
         // User is from migration army
         return;
       }
+      siteMemberEmails.push(user.email);
       const userType = whitelistedDomains.filter((domain) => user.email.endsWith(domain)).length > 0 ? 'ADMIN' : 'CONTRIBUTOR';
       siteMemberValues.push(`(${userId}, ${repoId}, '${userType}')`);
     });
@@ -103,7 +109,7 @@ const getSiteAndContributors = async (site, dbClient) => {
     const insertQuery = `INSERT INTO "site_members" (user_id, site_id, role) VALUES\n${siteMemberValues.join(',\n')};`;
     await dbClient.query(insertQuery);
     console.log(insertQuery);
-    await writeMigrationInfoToRecords(site, userData.map((userInfo) => JSON.stringify(userInfo)).join('\n'), JSON.stringify(repoData[0]), insertQuery);
+    await writeMigrationInfoToRecords(site, userData.map((userInfo) => JSON.stringify(userInfo)).join('\n'), JSON.stringify(repoData[0]), insertQuery, siteMemberEmails);
   } catch (err) {
     logError(`The following error occured while migrating ${site}: ${err}`);
     throw err;
@@ -114,6 +120,8 @@ const main = async () => {
   const repos = getReposToMigrate(REPO_LIST_PATH);
   const dbClient = await getDb();
   logError(`=================${new Date()}=================`);
+  fs.appendFileSync(EMAIL_CSV_PATH, `=================${new Date()}=================\n`);
+
   for (const repo of repos) {
     try {
       await getSiteAndContributors(repo, dbClient);
