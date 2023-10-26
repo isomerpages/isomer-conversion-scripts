@@ -43,6 +43,8 @@ This adds the new site member entries and also outputs texts file in `/<repo nam
 
 6. Fill in the appropriate form (prod: https://form.gov.sg/6513ae794fec5f0012b7f8ad) to clone the repo on our EFS.
 
+7. Provide the emails outputted in `emails.csv` to Ops to prepare for sending emails.
+
 ## Standalone github
 
 1. Follow steps 1-3 as above.
