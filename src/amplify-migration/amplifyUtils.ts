@@ -173,10 +173,10 @@ export async function createStagingLiteBranch(
   const appId = await createAmplifyApp(repoName, buildSpec, true);
 }
 
-export async function protectBranch(repoPath: string) {
+export async function protectBranch(appId: string) {
   const command = new UpdateAppCommand({
     enableBasicAuth: true,
-    appId: repoPath,
+    appId: appId,
     basicAuthCredentials: Buffer.from(
       `user:${process.env.AMPLIFY_DEFAULT_PASSWORD}`
     ).toString("base64"),

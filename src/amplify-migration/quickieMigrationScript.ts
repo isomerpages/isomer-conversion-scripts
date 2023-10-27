@@ -26,15 +26,16 @@ interface AmplifyAppInfo {
   isStagingLite?: boolean;
 }
 
+const MAX_APP_LIMIT = 25;
 // delay for 1 hour
 async function delayFor1Hr() {
-  return new Promise((resolve) => setTimeout(resolve, 1000)); //3600000
+  return new Promise((resolve) => setTimeout(resolve, 3600000));
 }
 
 async function quickifyRepo(repoName: string, stagingAppId: string) {
   const pwd = process.cwd();
 
-  const repoPath = path.join(`${pwd}/../${repoName}`);
+  const repoPath = path.join(`${pwd}/../${repoName}-staging-lite`);
 
   const buildSpec = await readBuildSpec();
   const redirectRules = await getRedirectRules(stagingAppId);
@@ -116,7 +117,11 @@ async function main() {
   // delineate logs for easier separation of runs
   const delineateString = `------------------${new Date().toLocaleString()}------------------`;
   fs.appendFileSync(path.join(__dirname, LOGS_FILE), delineateString + os.EOL);
-  let counter = 25; // App limit per hour
+  fs.appendFileSync(
+    path.join(__dirname, SQL_COMMANDS_QUICKIE_FILE),
+    delineateString + os.EOL
+  );
+  let counter = MAX_APP_LIMIT; // App limit per hour
   for (const [repoName, appId] of listOfRepos) {
     try {
       if (await isRepoEmpty(repoName)) {
@@ -132,8 +137,9 @@ async function main() {
       await quickifyRepo(repoName, appId);
       counter--;
       if (counter === 0) {
+        console.info("Max app limit reached. Waiting for 1 hour");
         await delayFor1Hr();
-        counter = 25;
+        counter = MAX_APP_LIMIT;
       }
     } catch (e) {
       const error: errorMessage = {
@@ -155,7 +161,7 @@ async function updateDBForQuickie(
   stagingAppId: string,
   stagingLiteAppInfo: AmplifyAppInfo
 ) {
-  const sqlCommands = `update deployments set staging_lite_hosting_id = '${stagingLiteAppInfo.appId}',staging_url = 'https://staging-lite.${stagingLiteAppInfo.appId}.amplifyapp.com' where deployments.hosting_id='${stagingAppId}'`;
+  const sqlCommands = `update deployments set staging_lite_hosting_id = '${stagingLiteAppInfo.appId}',staging_url = 'https://staging-lite.${stagingLiteAppInfo.appId}.amplifyapp.com' where deployments.hosting_id='${stagingAppId}';\n`;
   const sqlFile = path.join(__dirname, SQL_COMMANDS_QUICKIE_FILE);
   // append sql commands to file
   await fs.promises.appendFile(sqlFile, sqlCommands);
