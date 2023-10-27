@@ -61,6 +61,9 @@ async function quickifyRepo(repoName: string, stagingAppId: string) {
   await startReleaseJob(stagingLiteAppInfo);
 
   await updateDBForQuickie(stagingAppId, stagingLiteAppInfo);
+
+  //remove the repos from local disk to save mem
+  fs.rmdirSync(repoPath, { recursive: true });
 }
 
 /**
