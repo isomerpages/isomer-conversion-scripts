@@ -3,6 +3,9 @@ import {
   CreateAppCommand,
   CreateAppCommandInput,
   CreateBranchCommand,
+  CustomRule,
+  GetAppCommand,
+  GetAppCommandOutput,
   StartJobCommand,
   UpdateAppCommand,
 } from "@aws-sdk/client-amplify";
@@ -57,7 +60,7 @@ function generateCreateBranchInput(
 export async function createAmplifyBranches({
   appId,
   isStagingLite,
-}: AmplifyAppInfo) {
+}: Pick<AmplifyAppInfo, "appId" | "isStagingLite">) {
   if (isStagingLite) {
     await awsClient.send(generateCreateBranchInput(appId, "staging-lite"));
     return;
@@ -70,7 +73,7 @@ export async function createAmplifyBranches({
 export async function startReleaseJob({
   appId,
   isStagingLite,
-}: AmplifyAppInfo) {
+}: Pick<AmplifyAppInfo, "appId" | "isStagingLite">) {
   const params = {
     appId,
     branchName: "staging-lite",
@@ -88,18 +91,30 @@ export async function startReleaseJob({
   await awsClient.send(new StartJobCommand(params));
 }
 
+export async function getRedirectRules(appId: string) {
+  const appResp: GetAppCommandOutput = await awsClient.send(
+    new GetAppCommand({ appId })
+  );
+  return appResp.app?.customRules ?? [];
+}
 export async function createAmplifyApp(
   repo_name: string,
   build_spec: string,
-  isStagingLite: boolean = false
+  isStagingLite: boolean = false,
+  existingRedirectRules: CustomRule[] = []
 ): Promise<string> {
-  let redirectRules = [
+  let redirectRules: CustomRule[] = [
     {
       source: "/<*>",
       target: "/404.html",
       status: "404",
     },
   ];
+
+  const hasCustomRedirectRules = existingRedirectRules.length > 1; // 1 is the default 404 rule
+  if (hasCustomRedirectRules) {
+    redirectRules = existingRedirectRules;
+  }
 
   if (isStagingLite) {
     redirectRules = [

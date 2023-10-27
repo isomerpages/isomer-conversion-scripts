@@ -8,6 +8,7 @@
     "lint": "eslint --ext .js --ext .jsx --ignore-path .gitignore .",
     "lint-fix": "eslint --ignore-path .gitignore . --fix",
     "amplify:migrate": "npx ts-node src/amplify-migration/amplifyMigrationScript.ts",
+    "quickie:setup": "npx ts-node src/amplify-migration/quickieMigrationScript.ts",
     "jump:staging": "source .ssh/.env.staging && ssh -L 5433:$DB_HOST:5432 $SSH_USER@$SSH_HOST -i .ssh/isomercms-staging-bastion.pem",
     "jump:prod": "source .ssh/.env.prod && ssh -L 5433:$DB_HOST:5432 $SSH_USER@$SSH_HOST -i .ssh/isomercms-production-bastion.pem"
   },
