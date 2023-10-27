@@ -25,6 +25,12 @@ interface AmplifyAppInfo {
   repoPath: string;
   isStagingLite?: boolean;
 }
+
+// delay for 1 hour
+async function delayFor1Hr() {
+  return new Promise((resolve) => setTimeout(resolve, 1000)); //3600000
+}
+
 async function quickifyRepo(repoName: string, stagingAppId: string) {
   const pwd = process.cwd();
 
@@ -107,8 +113,8 @@ async function main() {
   // delineate logs for easier separation of runs
   const delineateString = `------------------${new Date().toLocaleString()}------------------`;
   fs.appendFileSync(path.join(__dirname, LOGS_FILE), delineateString + os.EOL);
-
-  listOfRepos.map(async ([repoName, appId]) => {
+  let counter = 25; // App limit per hour
+  for (const [repoName, appId] of listOfRepos) {
     try {
       if (await isRepoEmpty(repoName)) {
         console.info(`Skipping ${repoName} as it has no code`);
@@ -117,10 +123,15 @@ async function main() {
           path.join(__dirname, LOGS_FILE),
           `${repoName} ` + os.EOL
         );
-        return;
+        continue;
       }
 
       await quickifyRepo(repoName, appId);
+      counter--;
+      if (counter === 0) {
+        await delayFor1Hr();
+        counter = 25;
+      }
     } catch (e) {
       const error: errorMessage = {
         message: `${e}`,
@@ -134,7 +145,7 @@ async function main() {
         `${message} ` + os.EOL
       );
     }
-  });
+  }
 }
 
 async function updateDBForQuickie(
