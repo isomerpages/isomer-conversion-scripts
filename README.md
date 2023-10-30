@@ -19,6 +19,7 @@ Ideally, this should be done by the designated team account, not with your perso
 node migrationScript.js <repo name>
 ```
 
+3. Fill up this form after creating a csv: https://form.gov.sg/653b01a3ec066e001138f1b1
 ## Netlify to Amplify Migration
 
 ## How it works
