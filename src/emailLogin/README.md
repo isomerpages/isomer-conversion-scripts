@@ -23,7 +23,7 @@ Also, ensure that the repo name and the team name of the github repository are t
 
 2. Source your environment variables using `source .env`. The variables you will require are:
 
-- `PERSONAL_ACCESS_TOKEN` (Github personal access token)
+- `GITHUB_ACCESS_TOKEN` (Github personal access token)
 - `GITHUB_ORG_NAME` (isomerpages)
 - `DB_URI` (Refer to our environment variables)
 
