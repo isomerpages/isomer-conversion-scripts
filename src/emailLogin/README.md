@@ -41,7 +41,7 @@ node runMigration.js
 
 This adds the new site member entries and also outputs texts file in `/<repo name>/[contributors | repos | insertQueries].txt` with the retrieved information, and documents the insert queries run. Github write access for the site members will also be removed.
 
-6. Fill in the appropriate form (prod: https://form.gov.sg/653b01a3ec066e001138f1b1) to clone the repo on our EFS.
+6. Follow the instructions [here](https://www.notion.so/opengov/On-Call-Runbook-ab4bffa2472d47ef9b657242632da7f9?pvs=4#5e47d16fa9b44060a7d5deba7f44d5bf) to clone into the EFS.
 
 ## Standalone github
 
