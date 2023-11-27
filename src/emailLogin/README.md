@@ -41,7 +41,9 @@ node runMigration.js
 
 This adds the new site member entries and also outputs texts file in `/<repo name>/[contributors | repos | insertQueries].txt` with the retrieved information, and documents the insert queries run. Github write access for the site members will also be removed.
 
-6. Fill in the appropriate form (prod: https://form.gov.sg/653b01a3ec066e001138f1b1) to clone the repo on our EFS.
+6. Fill in the appropriate form (prod: https://form.gov.sg/admin/form/653b01a3ec066e001138f1b1) to clone the repo on our EFS.
+
+7. Provide the emails outputted in `emails.csv` to Ops to prepare for sending emails.
 
 ## Standalone github
 
