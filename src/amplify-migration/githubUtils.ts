@@ -93,8 +93,9 @@ export async function createStagingLiteBranch(repoName: string): Promise<void> {
   fs.mkdirSync(stgLiteDir);
 
   // Create staging lite branch in other repo path
+  await simpleGit(stgLiteDir).clone(remoteRepoUrl, stgLiteDir);
+
   await simpleGit(stgLiteDir)
-    .clone(remoteRepoUrl, stgLiteDir)
     .checkout("staging")
     .rm(["-r", "images"])
     .rm(["-r", "files"]);

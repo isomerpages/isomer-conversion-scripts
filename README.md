@@ -81,6 +81,15 @@ To run this, run
 `npm run amplify:migrate -- -user-id=<user-id> -repair-mode=true` in the command line.
 The file would exist at `../<repo-name>` for debugging purpose.
 
+### Quickie migration
+
+This is a one time migration flow that is meant to be run on all sites in our repos table.
+
+1. Obtain the list of repos in the db via the sql query populate csv by running following command:
+   `select repos.name, deployments.hosting_id from repos inner join deployments on deployments.site_id = repos.site_id` and put this in `list-of-repos-quickie.csv`
+2. run `npm run quickie:setup`
+3. run commands in `sqlcommandsQuickie.txt` on production db
+
 ### Email login migration
 
 See [here](src/emailLogin/README.md) for the specific instructions to run the email login migration.
