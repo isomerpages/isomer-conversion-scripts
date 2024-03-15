@@ -16,9 +16,9 @@ const { GITHUB_ORG_NAME } = process.env;
 const { RESOURCE_RENAME_BRANCH_REF } = process.env;
 
 // credentials with generic header
-const { PERSONAL_ACCESS_TOKEN } = process.env;
+const { GITHUB_ACCESS_TOKEN } = process.env;
 const { USERNAME } = process.env;
-const CREDENTIALS = `${USERNAME}:${PERSONAL_ACCESS_TOKEN}`;
+const CREDENTIALS = `${USERNAME}:${GITHUB_ACCESS_TOKEN}`;
 const headers = {
   Authorization: `Basic ${btoa(CREDENTIALS)}`,
   Accept: 'application/json',
